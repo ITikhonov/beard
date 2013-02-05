@@ -9,7 +9,12 @@
 -	indent="    "
 -	stack=[]
 
+-	shadows=[]
+
 -	def getvalue(x):
+-		if x in shadows:
+-			
+-			return 'var%s'%(shadows.index(x),)
 -		return 'getvalue(data,%s)'%(repr(x),)
 
 -	for i in range(len(tokens)):
@@ -24,7 +29,8 @@
 -				code.append("%sblock_%s(data,%s)"%(indent,block,getvalue(var)))
 -			elif '&' in token:
 -				var,lst=token.split('&')
--				code.append("%sfor %s in %s:"%(indent,var,getvalue(lst)))
+-				code.append("%sfor var%u in %s:"%(indent,len(shadows),getvalue(lst)))
+-				shadows.insert(0,var)
 -				indent+='    '
 -				stack.append(['for'])
 -			elif '=' in token:
@@ -33,18 +39,27 @@
 -				stack.append(['block'])
 -				indent+='    '
 -				code.append("%sdata=data.copy()"%(indent,))
--				code.append("%sdata[%s]=value()"%(indent,repr(var)))
+-				code.append("%sdata[%s]=value"%(indent,repr(var)))
 -			elif '?' in token:
 -				value,var=token.split('?')
 -				code.append("%sif compare(%s,%s):"%(indent,repr(value),getvalue(var)))
 -				indent+='    '
 -				stack.append(['if',var])
+-			elif token.startswith('@'):
+-				code.append("%sif %s:"%(indent,getvalue(token[1:])))
+-				indent+='    '
+-				stack.append(['if'])
+-			elif token.startswith('!'):
+-				code.append("%sif not %s:"%(indent,getvalue(token[1:])))
+-				indent+='    '
+-				stack.append(['if'])
 -			elif token=='*':
 -				code.append("%selse:"%(indent[:-4],))
 -			elif token=='':
 -				print '/',stack[-1]
--				if stack[-1][0]!='choice':
--					indent=indent[:-4]
+-				if stack[-1][0]=='for':
+-					shadows.pop(0)
+-				indent=indent[:-4]
 -				stack.pop()
 -			else:
 -				code.append("%soutput(%s)"%(indent,getvalue(token)))
@@ -105,10 +120,10 @@
 -
 -	<div>
 -		Simple boolean conditional
--		##true?simple_cond_var##
+-		##@simple_cond_var##
 -			<div>Yes</div>
 -		####
--		##false?simple_cond_var##
+-		##!simple_cond_var##
 -			<div>no</div>
 -		####
 -	</div>
@@ -123,7 +138,7 @@
 -		##right?##
 -			<div> style="text-align:center">Lean to Right</div>
 -		##*##
--			<div> style="text-align:center">Dunno what to do with ##cond_var##</div>
+-			<div> style="text-align:center">Dunno what to do with '##cond_var##'</div>
 -		####
 -	</div>
 -	####
