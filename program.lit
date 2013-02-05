@@ -24,7 +24,7 @@
 -				code.append("%sblock_%s(data,%s)"%(indent,block,getvalue(var)))
 -			elif '&' in token:
 -				var,lst=token.split('&')
--				code.append("%sfor %s in %s:"%(indent,var,lst))
+-				code.append("%sfor %s in %s:"%(indent,var,getvalue(lst)))
 -				indent+='    '
 -				stack.append(['for'])
 -			elif '=' in token:
@@ -53,15 +53,29 @@
 -				code.append("%soutput(%s)"%(indent,repr(token)))
 -	return '\n'.join(code)
 
+=defaults
+-import sys
+-def output(x):
+-	sys.stdout.write(x)
+
+-def getvalue(data,x):
+-	return data[x]
+
+-def compare(x,y):
+-	if repr(x)==repr(y): return True
+-	return False
+
 =compile
 -def compile(source):
+-	g={'output':output,'getvalue':getvalue,'compare':compare}
 -	l={}
--	exec(source,{},l)
+-	exec(source,g,l)
 -	return l['template']
 
 =>beard.py
 >tokenize
 >generate
+>defaults
 >compile
 
 -test="""
@@ -75,6 +89,12 @@
 -print ctemplate
 -print dir(ctemplate)
 
+-print ctemplate({
+-	'simple_var': 'Simple Variable',
+-	'simple_cond_var': True,
+-	'list_var': ['left','center','right','unknown']
+-})
+
 =example
 -<html>
 -<head>
@@ -85,10 +105,10 @@
 -
 -	<div>
 -		Simple boolean conditional
--		##true?cond_var##
+-		##true?simple_cond_var##
 -			<div>Yes</div>
 -		####
--		##false?cond_var##
+-		##false?simple_cond_var##
 -			<div>no</div>
 -		####
 -	</div>
