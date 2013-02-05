@@ -8,23 +8,20 @@
 -	code=["def template(data):"]
 -	indent="    "
 -	stack=[]
--	shadows=[]
 
 -	def getvalue(x):
--		for v,r in shadows:
--			if v==x: x=r
--		return 'getvalue(%s)'%(repr(x),)
+-		return 'getvalue(data,%s)'%(repr(x),)
 
 -	for i in range(len(tokens)):
 -		token=tokens[i]
+-		print token
 -		if i%2:
--			print stack
+-			print token
 -			if token.endswith('?'):
 -				code.append("%selif compare(%s,%s):"%(indent[:-4],repr(token[:-1]),getvalue(stack[-1][1])))
 -			elif '>' in token:
 -				var,block=token.split('>')
--				shadows.insert(0,(var,))
--				code.append("%sblock_%s(%s)"%(indent,block,getvalue(var)))
+-				code.append("%sblock_%s(data,%s)"%(indent,block,getvalue(var)))
 -			elif '&' in token:
 -				var,lst=token.split('&')
 -				code.append("%sfor %s in %s:"%(indent,var,lst))
@@ -32,8 +29,11 @@
 -				stack.append(['for'])
 -			elif '=' in token:
 -				var,name=token.split('=')
--				code.append("%sdef block_%s(value):"%(indent,name))
+-				code.append("%sdef block_%s(data,value):"%(indent,name))
+-				stack.append(['block'])
 -				indent+='    '
+-				code.append("%sdata=data.copy()"%(indent,))
+-				code.append("%sdata[%s]=value()"%(indent,repr(var)))
 -			elif '?' in token:
 -				value,var=token.split('?')
 -				code.append("%sif compare(%s,%s):"%(indent,repr(value),getvalue(var)))
@@ -42,9 +42,7 @@
 -			elif token=='*':
 -				code.append("%selse:"%(indent[:-4],))
 -			elif token=='':
--				if stack[-1][0]=='block':
--					var=stack[-1][1]
--					shadows.pop(0)
+-				print '/',stack[-1]
 -				if stack[-1][0]!='choice':
 -					indent=indent[:-4]
 -				stack.pop()
