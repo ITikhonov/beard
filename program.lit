@@ -3,6 +3,71 @@
 -def tokenize(t):
 -	return t.split('##')
 
+=jsgenerator
+-class JavascriptGenerator(object):
+-	def __init__(_):
+-		_.code=[
+-			"function template(data,value,output,getvalue,compare) {"
+-		]
+-		_.indent="    "
+
+-	def c(_,p,*args):
+-		_.code.append(_.indent+(p%args))
+
+-	def c0(_,p,*args):
+-		_.code.append(_.indent[:-4]+(p%args))
+
+-	def text(_):
+-		return '\n'.join(_.code+['}'])
+
+-	def getvalue(_,x):
+-		if x in _.shadows: return 'var%s'%(_.shadows.index(x),)
+-		return 'getvalue(data,%s)'%(repr(x),)
+
+-	def icall(_,block,var):
+-		_.c("(%s?%s:block_%s)(data,%s,output,getvalue,compare);",_.getvalue(block),_.getvalue(block),block,_.getvalue(var))
+
+-	def ielif(_,var,value):
+-		_.c0("} else if(compare(%s,%s)) {",repr(value),_.getvalue(var))
+
+-	def iiter(_,var,lst):
+-		i=len(_.shadows)
+-		_.c("var arr%u=%s; for(var idx%u=0;idx%u<arr%u.length;idx%u++) { var var%u=arr%u[idx%u]; ",i,_.getvalue(lst),i,i,i,i,i,i,i)
+-		_.indent+='    '
+
+-	def iblock(_,name,var):
+-		_.c("function block_%s(pdata,value) {",name)
+-		_.indent+='    '
+-		_.c("var data={}; var i; for(i in pdata) data[i]=pdata[i];",)
+-		_.c("data[%s]=value;",repr(var))
+
+-	def iif(_,var,value):
+-		_.c("if(compare(%s,%s)) {",repr(value),_.getvalue(var))
+-		_.indent+='    '
+
+-	def iiftrue(_,var):
+-		_.c("if(%s) {",_.getvalue(var))
+-		_.indent+='    '
+
+-	def iiffalse(_,var):
+-		_.c("if(!%s) {",_.getvalue(var))
+-		_.indent+='    '
+
+-	def ielse(_):
+-		_.c0("} else {")
+
+-	def ivar(_,var):
+-		_.c("output(%s);",_.getvalue(var))
+
+-	def ilit(_,text):
+-		_.c("output(%s);",repr(text))
+
+-	def pop(_):
+-		_.indent=_.indent[:-4]
+-		_.c("}")
+
+
+
 =generator
 -class PythonGenerator(object):
 -	def __init__(_):
@@ -66,11 +131,10 @@
 -		_.indent=_.indent[:-4]
 
 =generate
--def generate(tokens):
+-def generate(gen,tokens):
 -	stack=[]
 -	shadows=[]
 
--	gen=PythonGenerator()
 -	gen.shadows=shadows
 
 -	for i in range(len(tokens)):
@@ -142,6 +206,7 @@
 =>beard.py
 >tokenize
 >generator
+>jsgenerator
 >generate
 >defaults
 >compile
@@ -151,11 +216,17 @@
 -	if argv[1]=='--test': return test()
 -	text=open(argv[1]).read()
 -	tokens=tokenize(text)
--	template=generate(tokens)
--	if argv[1].endswith('.beard'):
--		f=open(argv[1][:-6]+'.py','w')
--		f.write(template)
--		f.close()
+-	name=argv[1][:-6] if argv[1].endswith('.beard') else argv[1]
+
+-	f=open(name+'.py','w')
+-	template=generate(PythonGenerator(),tokens)
+-	f.write(template)
+-	f.close()
+
+-	f=open(name+'.js','w')
+-	template=generate(JavascriptGenerator(),tokens)
+-	f.write(template)
+-	f.close()
 
 -def test():
 -	from sys import argv
