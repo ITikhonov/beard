@@ -70,10 +70,15 @@
 =defaults
 -import sys
 -def output(x):
--	sys.stdout.write(x)
+-	if x is not None:
+-		sys.stdout.write(str(x))
 
 -def getvalue(data,x):
--	return data.get(x)
+-	vs=x.split('.')
+-	v=data
+-	for y in vs:
+-		v=v.get(y)
+-	return v
 
 -def compare(x,y):
 -	if repr(x)==repr(y): return True
@@ -107,7 +112,8 @@
 -	'simple_var': 'Simple Variable',
 -	'simple_cond_var': True,
 -	'list_var': ['left','center','right','unknown'],
--	'ext_block': lambda data,x: output("External block received '%s' value"%(x,))
+-	'ext_block': lambda data,x: output("External block received '%s' value"%(x,)),
+-	'nestlist_var': [{'cond':'left'},{'cond':'center'},{'cond':'right'},{'cond':'unknown'}],
 -})
 
 =example
@@ -127,7 +133,7 @@
 -			<div>no</div>
 -		####
 -	</div>
--
+
 -	##cond_var=block##
 -	<div>
 -		Choice conditional
@@ -142,7 +148,7 @@
 -		####
 -	</div>
 -	####
--
+
 -	<div>
 -		Iteration
 -		##i:list_var##
@@ -156,7 +162,27 @@
 -			##i>ext_block##
 -		####
 -	</div>
--
--
+
+-	##v=nest_block##
+-	<div>
+-		Choice conditional on ##v.cond##.
+-		##left?v.cond##
+-			<div style="text-align:left">Stay at Left</div>
+-		##center?##
+-			<div> style="text-align:center">Hold Center</div>
+-		##right?##
+-			<div> style="text-align:center">Lean to Right</div>
+-		##*##
+-			<div> style="text-align:center">Dunno what to do with '##v.cond##'</div>
+-		####
+-	</div>
+-	####
+-	<div>
+-		Dot-notation
+-		##i:nestlist_var##
+-			##i>nest_block##
+-		####
+-	</div>
+
 -</body>
 -</html>
