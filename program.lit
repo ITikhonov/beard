@@ -6,7 +6,10 @@
 =generator
 -class PythonGenerator(object):
 -	def __init__(_):
--		_.code=["def template(data,value=None):"]
+-		_.code=[
+-			"import beard",
+-			"def template(data,value=None,output=beard.output,getvalue=beard.getvalue,compare=beard.compare):"
+-		]
 -		_.indent="    "
 
 -	def c(_,p,*args):
@@ -23,7 +26,7 @@
 -		return 'getvalue(data,%s)'%(repr(x),)
 
 -	def icall(_,block,var):
--		_.c("(%s if %s else block_%s)(data,%s)",_.getvalue(block),_.getvalue(block),block,_.getvalue(var))
+-		_.c("(%s if %s else block_%s)(data,%s,output=output,getvalue=getvalue,compare=compare)",_.getvalue(block),_.getvalue(block),block,_.getvalue(var))
 
 -	def ielif(_,var,value):
 -		_.c0("elif compare(%s,%s):",repr(value),_.getvalue(var))
@@ -33,7 +36,7 @@
 -		_.indent+='    '
 
 -	def iblock(_,name,var):
--		_.c("def block_%s(data,value):",name)
+-		_.c("def block_%s(data,value,**kw):",name)
 -		_.indent+='    '
 -		_.c("data=data.copy()",)
 -		_.c("data[%s]=value",repr(var))
@@ -131,7 +134,7 @@
 
 =compile
 -def compile(source):
--	g={'output':output,'getvalue':getvalue,'compare':compare}
+-	g={}
 -	l={}
 -	exec(source,g,l)
 -	return l['template']
@@ -147,19 +150,22 @@
 >example
 -"""
 
--tokens=tokenize(test)
--template=generate(tokens)
--print template
--ctemplate=compile(template)
--print dir(ctemplate)
+-def main():
+-	tokens=tokenize(test)
+-	template=generate(tokens)
+-	print template
+-	ctemplate=compile(template)
+-	print dir(ctemplate)
 
--print ctemplate({
--	'simple_var': 'Simple Variable',
--	'simple_cond_var': True,
--	'list_var': ['left','center','right','unknown'],
--	'ext_block': lambda data,x: output("External block received '%s' value"%(x,)),
--	'nestlist_var': [{'cond':'left'},{'cond':'center'},{'cond':'right'},{'cond':'unknown'}],
--})
+-	print ctemplate({
+-		'simple_var': 'Simple Variable',
+-		'simple_cond_var': True,
+-		'list_var': ['left','center','right','unknown'],
+-		'ext_block': lambda data,x,output,**kw: output("External block received '%s' value"%(x,)),
+-		'nestlist_var': [{'cond':'left'},{'cond':'center'},{'cond':'right'},{'cond':'unknown'}],
+-	})
+
+-if __name__=='__main__': main()
 
 =example
 -<html>
