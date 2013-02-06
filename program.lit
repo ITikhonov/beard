@@ -5,9 +5,9 @@
 
 =jsgenerator
 -class JavascriptGenerator(object):
--	def __init__(_):
+-	def __init__(_,name):
 -		_.code=[
--			"function template(data,value,output,getvalue,compare) {"
+-			"Beard.template[%s]=function(data,value,output,getvalue,compare) {"%(repr(name))
 -		]
 -		_.indent="    "
 
@@ -224,7 +224,7 @@
 -	f.close()
 
 -	f=open(name+'.js','w')
--	template=generate(JavascriptGenerator(),tokens)
+-	template=generate(JavascriptGenerator(name),tokens)
 -	f.write(template)
 -	f.close()
 
@@ -242,6 +242,45 @@
 -	})
 
 -if __name__=='__main__': main()
+
+
+=>beard.js
+-Beard={
+-	template: {},
+-	output: function (x) { putstr(x); },
+-
+-	getvalue: function(data,x) {
+-		var vs=x.split('.');
+-		var v=data;
+-		var i;
+-		for(i=0;i<vs.length;i++) {
+-			y=v[vs[i]];
+-			if(y==undefined) return;
+-			v=y;
+-		}
+-		return v;
+-	},
+-
+-	compare: function(x,y) { return x==y; },
+-
+-	render: function(name,data) {
+-		Beard.template[name](data,undefined,this.output,this.getvalue,this.compare);
+-	}
+-};
+
+=>test.js
+-load("beard.js")
+-load("example.js")
+
+-Beard.render('example',{
+-	'simple_var': 'Simple Variable',
+-	'simple_cond_var': true,
+-	'list_var': ['left','center','right','unknown'],
+-	'ext_block': function(data,x,output) { output("External block received '"+x+"' value"); },
+-	'nestlist_var': [{'cond':'left'},{'cond':'center'},{'cond':'right'},{'cond':'unknown'}],
+-});
+
+
 
 =>example.beard
 -<html>
