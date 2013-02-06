@@ -5,10 +5,9 @@
 
 =generate
 -def generate(tokens):
--	code=["def template(data):"]
+-	code=["def template(data,value=None):"]
 -	indent="    "
 -	stack=[]
-
 -	shadows=[]
 
 -	def getvalue(x):
@@ -26,9 +25,9 @@
 -				code.append("%selif compare(%s,%s):"%(indent[:-4],repr(token[:-1]),getvalue(stack[-1][1])))
 -			elif '>' in token:
 -				var,block=token.split('>')
--				code.append("%sblock_%s(data,%s)"%(indent,block,getvalue(var)))
--			elif '&' in token:
--				var,lst=token.split('&')
+-				code.append("%s(%s if %s else block_%s)(data,%s)"%(indent,getvalue(block),getvalue(block),block,getvalue(var)))
+-			elif ':' in token:
+-				var,lst=token.split(':')
 -				code.append("%sfor var%u in %s:"%(indent,len(shadows),getvalue(lst)))
 -				shadows.insert(0,var)
 -				indent+='    '
@@ -74,7 +73,7 @@
 -	sys.stdout.write(x)
 
 -def getvalue(data,x):
--	return data[x]
+-	return data.get(x)
 
 -def compare(x,y):
 -	if repr(x)==repr(y): return True
@@ -107,7 +106,8 @@
 -print ctemplate({
 -	'simple_var': 'Simple Variable',
 -	'simple_cond_var': True,
--	'list_var': ['left','center','right','unknown']
+-	'list_var': ['left','center','right','unknown'],
+-	'ext_block': lambda data,x: output("External block received '%s' value"%(x,))
 -})
 
 =example
@@ -145,10 +145,18 @@
 -
 -	<div>
 -		Iteration
--		##i&list_var##
+-		##i:list_var##
 -			##i>block##
 -		####
 -	</div>
+
+-	<div>
+-		External blocks
+-		##i:list_var##
+-			##i>ext_block##
+-		####
+-	</div>
+-
 -
 -</body>
 -</html>
