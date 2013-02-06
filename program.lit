@@ -6,32 +6,64 @@
 =generator
 -class PythonGenerator(object):
 -	def __init__(_):
--		pass
+-		_.code=["def template(data,value=None):"]
+-		_.indent="    "
+
+-	def text(_):
+-		return '\n'.join(_.code)
 
 -	def getvalue(_,x):
 -		if x in _.shadows:
 -			return 'var%s'%(_.shadows.index(x),)
 -		return 'getvalue(data,%s)'%(repr(x),)
 
+-	def icall(_,block,var):
+-		_.code.append("%s(%s if %s else block_%s)(data,%s)"%(_.indent,_.getvalue(block),_.getvalue(block),block,_.getvalue(var)))
+
 -	def ielif(_,var,value):
--		_.code.append("%selif compare(%s,%s):"%(_.indent[:-4],_.getvalue(var),repr(value),))
+-		_.code.append("%selif compare(%s,%s):"%(_.indent[:-4],repr(value),_.getvalue(var)))
+
+-	def iiter(_,var,lst):
+-		_.code.append("%sfor var%u in %s:"%(_.indent,len(_.shadows),_.getvalue(lst)))
+-		_.indent+='    '
+
+-	def iblock(_,name,var):
+-		_.code.append("%sdef block_%s(data,value):"%(_.indent,name))
+-		_.indent+='    '
+-		_.code.append("%sdata=data.copy()"%(_.indent,))
+-		_.code.append("%sdata[%s]=value"%(_.indent,repr(var)))
+
+-	def iif(_,var,value):
+-		_.code.append("%sif compare(%s,%s):"%(_.indent,repr(value),_.getvalue(var)))
+-		_.indent+='    '
+
+-	def iiftrue(_,var):
+-		_.code.append("%sif %s:"%(_.indent,_.getvalue(var)))
+-		_.indent+='    '
+
+-	def iiffalse(_,var):
+-		_.code.append("%sif not %s:"%(_.indent,_.getvalue(var)))
+-		_.indent+='    '
+
+-	def ielse(_):
+-		_.code.append("%selse:"%(_.indent[:-4],))
+
+-	def ivar(_,var):
+-		_.code.append("%soutput(%s)"%(_.indent,_.getvalue(var)))
+
+-	def ilit(_,text):
+-		_.code.append("%soutput(%s)"%(_.indent,repr(text)))
+
+-	def pop(_):
+-		_.indent=_.indent[:-4]
 
 =generate
 -def generate(tokens):
--	code=["def template(data,value=None):"]
 -	stack=[]
 -	shadows=[]
 
-
 -	gen=PythonGenerator()
--	gen.stack=stack
--	gen.code=code
--	gen.indent="    "
 -	gen.shadows=shadows
-
--	def getvalue(x):
--		return gen.getvalue(x)
-
 
 -	for i in range(len(tokens)):
 -		token=tokens[i]
@@ -39,50 +71,41 @@
 -		if i%2:
 -			print token
 -			if token.endswith('?'):
--				gen.ielif(stack[-1][1],repr(token[:-1]))
+-				gen.ielif(stack[-1][1],token[:-1])
 -			elif '>' in token:
 -				var,block=token.split('>')
--				code.append("%s(%s if %s else block_%s)(data,%s)"%(gen.indent,getvalue(block),getvalue(block),block,getvalue(var)))
+-				gen.icall(block,var)
 -			elif ':' in token:
 -				var,lst=token.split(':')
--				code.append("%sfor var%u in %s:"%(gen.indent,len(shadows),getvalue(lst)))
+-				gen.iiter(var,lst)
 -				shadows.insert(0,var)
--				gen.indent+='    '
 -				stack.append(['for'])
 -			elif '=' in token:
 -				var,name=token.split('=')
--				code.append("%sdef block_%s(data,value):"%(gen.indent,name))
+-				gen.iblock(name,var)
 -				stack.append(['block'])
--				gen.indent+='    '
--				code.append("%sdata=data.copy()"%(gen.indent,))
--				code.append("%sdata[%s]=value"%(gen.indent,repr(var)))
 -			elif '?' in token:
 -				value,var=token.split('?')
--				code.append("%sif compare(%s,%s):"%(gen.indent,repr(value),getvalue(var)))
--				gen.indent+='    '
+-				gen.iif(var,value)
 -				stack.append(['if',var])
 -			elif token.startswith('@'):
--				code.append("%sif %s:"%(gen.indent,getvalue(token[1:])))
--				gen.indent+='    '
+-				gen.iiftrue(token[1:])
 -				stack.append(['if'])
 -			elif token.startswith('!'):
--				code.append("%sif not %s:"%(gen.indent,getvalue(token[1:])))
--				gen.indent+='    '
+-				gen.iiffalse(token[1:])
 -				stack.append(['if'])
 -			elif token=='*':
--				code.append("%selse:"%(gen.indent[:-4],))
+-				gen.ielse()
 -			elif token=='':
 -				print '/',stack[-1]
--				if stack[-1][0]=='for':
--					shadows.pop(0)
--				gen.indent=gen.indent[:-4]
+-				if stack[-1][0]=='for': shadows.pop(0)
+-				gen.pop()
 -				stack.pop()
 -			else:
--				code.append("%soutput(%s)"%(gen.indent,getvalue(token)))
+-				gen.ivar(token)
 -		else:
--			if token!='':
--				code.append("%soutput(%s)"%(gen.indent,repr(token)))
--	return '\n'.join(code)
+-			if token!='': gen.ilit(token)
+-	return gen.text()
 
 =defaults
 -import sys
@@ -123,7 +146,6 @@
 -template=generate(tokens)
 -print template
 -ctemplate=compile(template)
--print ctemplate
 -print dir(ctemplate)
 
 -print ctemplate({
