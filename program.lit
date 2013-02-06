@@ -146,18 +146,23 @@
 >defaults
 >compile
 
--test="""
->example
--"""
-
 -def main():
--	tokens=tokenize(test)
+-	from sys import argv
+-	if argv[1]=='--test': return test()
+-	text=open(argv[1]).read()
+-	tokens=tokenize(text)
 -	template=generate(tokens)
--	print template
--	ctemplate=compile(template)
--	print dir(ctemplate)
+-	if argv[1].endswith('.beard'):
+-		f=open(argv[1][:-6]+'.py','w')
+-		f.write(template)
+-		f.close()
 
--	print ctemplate({
+-def test():
+-	from sys import argv
+-	from importlib import import_module
+-	m=import_module(argv[2])
+-	
+-	m.template({
 -		'simple_var': 'Simple Variable',
 -		'simple_cond_var': True,
 -		'list_var': ['left','center','right','unknown'],
@@ -167,7 +172,7 @@
 
 -if __name__=='__main__': main()
 
-=example
+=>example.beard
 -<html>
 -<head>
 -	<title>Hello, world</title>
