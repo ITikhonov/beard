@@ -3,18 +3,35 @@
 -def tokenize(t):
 -	return t.split('##')
 
+=generator
+-class PythonGenerator(object):
+-	def __init__(_):
+-		pass
+
+-	def getvalue(_,x):
+-		if x in _.shadows:
+-			return 'var%s'%(_.shadows.index(x),)
+-		return 'getvalue(data,%s)'%(repr(x),)
+
+-	def ielif(_,var,value):
+-		_.code.append("%selif compare(%s,%s):"%(_.indent[:-4],_.getvalue(var),repr(value),))
+
 =generate
 -def generate(tokens):
 -	code=["def template(data,value=None):"]
--	indent="    "
 -	stack=[]
 -	shadows=[]
 
+
+-	gen=PythonGenerator()
+-	gen.stack=stack
+-	gen.code=code
+-	gen.indent="    "
+-	gen.shadows=shadows
+
 -	def getvalue(x):
--		if x in shadows:
--			
--			return 'var%s'%(shadows.index(x),)
--		return 'getvalue(data,%s)'%(repr(x),)
+-		return gen.getvalue(x)
+
 
 -	for i in range(len(tokens)):
 -		token=tokens[i]
@@ -22,49 +39,49 @@
 -		if i%2:
 -			print token
 -			if token.endswith('?'):
--				code.append("%selif compare(%s,%s):"%(indent[:-4],repr(token[:-1]),getvalue(stack[-1][1])))
+-				gen.ielif(stack[-1][1],repr(token[:-1]))
 -			elif '>' in token:
 -				var,block=token.split('>')
--				code.append("%s(%s if %s else block_%s)(data,%s)"%(indent,getvalue(block),getvalue(block),block,getvalue(var)))
+-				code.append("%s(%s if %s else block_%s)(data,%s)"%(gen.indent,getvalue(block),getvalue(block),block,getvalue(var)))
 -			elif ':' in token:
 -				var,lst=token.split(':')
--				code.append("%sfor var%u in %s:"%(indent,len(shadows),getvalue(lst)))
+-				code.append("%sfor var%u in %s:"%(gen.indent,len(shadows),getvalue(lst)))
 -				shadows.insert(0,var)
--				indent+='    '
+-				gen.indent+='    '
 -				stack.append(['for'])
 -			elif '=' in token:
 -				var,name=token.split('=')
--				code.append("%sdef block_%s(data,value):"%(indent,name))
+-				code.append("%sdef block_%s(data,value):"%(gen.indent,name))
 -				stack.append(['block'])
--				indent+='    '
--				code.append("%sdata=data.copy()"%(indent,))
--				code.append("%sdata[%s]=value"%(indent,repr(var)))
+-				gen.indent+='    '
+-				code.append("%sdata=data.copy()"%(gen.indent,))
+-				code.append("%sdata[%s]=value"%(gen.indent,repr(var)))
 -			elif '?' in token:
 -				value,var=token.split('?')
--				code.append("%sif compare(%s,%s):"%(indent,repr(value),getvalue(var)))
--				indent+='    '
+-				code.append("%sif compare(%s,%s):"%(gen.indent,repr(value),getvalue(var)))
+-				gen.indent+='    '
 -				stack.append(['if',var])
 -			elif token.startswith('@'):
--				code.append("%sif %s:"%(indent,getvalue(token[1:])))
--				indent+='    '
+-				code.append("%sif %s:"%(gen.indent,getvalue(token[1:])))
+-				gen.indent+='    '
 -				stack.append(['if'])
 -			elif token.startswith('!'):
--				code.append("%sif not %s:"%(indent,getvalue(token[1:])))
--				indent+='    '
+-				code.append("%sif not %s:"%(gen.indent,getvalue(token[1:])))
+-				gen.indent+='    '
 -				stack.append(['if'])
 -			elif token=='*':
--				code.append("%selse:"%(indent[:-4],))
+-				code.append("%selse:"%(gen.indent[:-4],))
 -			elif token=='':
 -				print '/',stack[-1]
 -				if stack[-1][0]=='for':
 -					shadows.pop(0)
--				indent=indent[:-4]
+-				gen.indent=gen.indent[:-4]
 -				stack.pop()
 -			else:
--				code.append("%soutput(%s)"%(indent,getvalue(token)))
+-				code.append("%soutput(%s)"%(gen.indent,getvalue(token)))
 -		else:
 -			if token!='':
--				code.append("%soutput(%s)"%(indent,repr(token)))
+-				code.append("%soutput(%s)"%(gen.indent,repr(token)))
 -	return '\n'.join(code)
 
 =defaults
@@ -93,6 +110,7 @@
 
 =>beard.py
 >tokenize
+>generator
 >generate
 >defaults
 >compile
