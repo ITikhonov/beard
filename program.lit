@@ -9,50 +9,55 @@
 -		_.code=["def template(data,value=None):"]
 -		_.indent="    "
 
+-	def c(_,p,*args):
+-		_.code.append(_.indent+(p%args))
+
+-	def c0(_,p,*args):
+-		_.code.append(_.indent[:-4]+(p%args))
+
 -	def text(_):
 -		return '\n'.join(_.code)
 
 -	def getvalue(_,x):
--		if x in _.shadows:
--			return 'var%s'%(_.shadows.index(x),)
+-		if x in _.shadows: return 'var%s'%(_.shadows.index(x),)
 -		return 'getvalue(data,%s)'%(repr(x),)
 
 -	def icall(_,block,var):
--		_.code.append("%s(%s if %s else block_%s)(data,%s)"%(_.indent,_.getvalue(block),_.getvalue(block),block,_.getvalue(var)))
+-		_.c("(%s if %s else block_%s)(data,%s)",_.getvalue(block),_.getvalue(block),block,_.getvalue(var))
 
 -	def ielif(_,var,value):
--		_.code.append("%selif compare(%s,%s):"%(_.indent[:-4],repr(value),_.getvalue(var)))
+-		_.c0("elif compare(%s,%s):",repr(value),_.getvalue(var))
 
 -	def iiter(_,var,lst):
--		_.code.append("%sfor var%u in %s:"%(_.indent,len(_.shadows),_.getvalue(lst)))
+-		_.c("for var%u in %s:",len(_.shadows),_.getvalue(lst))
 -		_.indent+='    '
 
 -	def iblock(_,name,var):
--		_.code.append("%sdef block_%s(data,value):"%(_.indent,name))
+-		_.c("def block_%s(data,value):",name)
 -		_.indent+='    '
--		_.code.append("%sdata=data.copy()"%(_.indent,))
--		_.code.append("%sdata[%s]=value"%(_.indent,repr(var)))
+-		_.c("data=data.copy()",)
+-		_.c("data[%s]=value",repr(var))
 
 -	def iif(_,var,value):
--		_.code.append("%sif compare(%s,%s):"%(_.indent,repr(value),_.getvalue(var)))
+-		_.c("if compare(%s,%s):",repr(value),_.getvalue(var))
 -		_.indent+='    '
 
 -	def iiftrue(_,var):
--		_.code.append("%sif %s:"%(_.indent,_.getvalue(var)))
+-		_.c("if %s:",_.getvalue(var))
 -		_.indent+='    '
 
 -	def iiffalse(_,var):
--		_.code.append("%sif not %s:"%(_.indent,_.getvalue(var)))
+-		_.c("if not %s:",_.getvalue(var))
 -		_.indent+='    '
 
 -	def ielse(_):
--		_.code.append("%selse:"%(_.indent[:-4],))
+-		_.c0("else:")
 
 -	def ivar(_,var):
--		_.code.append("%soutput(%s)"%(_.indent,_.getvalue(var)))
+-		_.c("output(%s)",_.getvalue(var))
 
 -	def ilit(_,text):
--		_.code.append("%soutput(%s)"%(_.indent,repr(text)))
+-		_.c("output(%s)",repr(text))
 
 -	def pop(_):
 -		_.indent=_.indent[:-4]
