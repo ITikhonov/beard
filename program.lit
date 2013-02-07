@@ -1,4 +1,38 @@
 
+		Beard template language.
+
+	In the time of XMLHttpRequest need arise for templates to be used both
+	on server-side and client-side.
+
+	It's not hard when you use <s>same language</s>Javascript on both sides.
+	But what to do if you are not fond of Node.js?
+
+	Well, you need a cross-language template engine!
+
+	Ahoy! Here come the Beard! Instead of abandoning logic on a religious
+	crusade for purity of ideas like our Mustache-wearing brothers, Beard
+	design is dictated by practice.
+
+	To support expressions (like in {% if x==1 or y in "abc" %}), you need
+	a language. You can't resort to some simple half-assed hack by transforming it
+	with clever regexp into host language expression (like in underscore), because
+	you have at least TWO host languages.
+
+	Writing expressive expression languages is a tricky thing. And you need to do
+	it for each host language you going to support (so, at least twice).
+
+	Beard avoids this by having no expressions. Beard is computation-less (well,
+	Mustache is cleary too, not sure how and why they come up with their illogical
+	motto).
+
+	But what Beard has? Beard has conditional rendering, including switch,
+	iteration over lists and parametrized subtemplates.
+
+	It also allows to define computations in several host languages all in one
+	template file. See? Beard don't try to force you into facial-futures related
+	religion, the ultimate goal of Beard is to conserve your precious time.
+
+
 =tokenize
 -def tokenize(t):
 -	return t.split('##')
