@@ -61,10 +61,6 @@
 =generate
 -def generate(gen,tokens):
 -	stack=[]
--	shadows=[]
-
--	gen.shadows=shadows
-
 -	code=None
 -	for i in range(len(tokens)):
 -		token=tokens[i]
@@ -234,10 +230,8 @@
 -			elif ':' in token:
 -				var,lst=token.split(':')
 -				gen.iiter(var,lst)
--				shadows.insert(0,var)
 -				stack.append(['for',var])
 -			elif token=='':
--				if stack[-1][0]=='for': shadows.pop(0)
 -				gen.pop(stack.pop())
 -			else:
 -				gen.ivar(token)
@@ -265,7 +259,6 @@
 -		return '\n'.join(_.code+['}'])
 
 -	def getvalue(_,x):
--		if x in _.shadows: return 'var%s'%(_.shadows.index(x),)
 -		return 'getvalue(data,%s)'%(repr(x),)
 
 -	def icall(_,block,var):
@@ -321,6 +314,7 @@
 =generator
 -class PythonGenerator(object):
 -	def __init__(_):
+-		_.nest=0
 -		_.tag='py'
 -		_.code=[
 -			"import beard",
@@ -338,7 +332,6 @@
 -		return '\n'.join(_.code)
 
 -	def getvalue(_,x):
--		if x in _.shadows: return 'var%s'%(_.shadows.index(x),)
 -		return 'getvalue(data,%s)'%(repr(x),)
 
 -	def icall(_,block,var):
@@ -348,10 +341,11 @@
 -		_.c0("elif compare(%s,%s):",repr(value),_.getvalue(var))
 
 -	def iiter(_,var,lst):
--		_.c("hold%u=data.get(%s)",len(_.shadows),repr(var));
--		_.c("for var%u in %s:",len(_.shadows),_.getvalue(lst))
+-		_.c("hold%u=data.get(%s)",_.nest,repr(var));
+-		_.c("for var%u in %s:",_.nest,_.getvalue(lst))
 -		_.indent+='    '
--		_.c("data[%s]=var%u",repr(var),len(_.shadows));
+-		_.c("data[%s]=var%u",repr(var),_.nest);
+-		_.nest+=1
 
 -	def iblock(_,name,var):
 -		_.c("def block_%s(data,value,**kw):",name)
@@ -385,7 +379,8 @@
 
 -	def pop(_,what):
 -		if what[0]=='for':
--			_.c("if hold%u is not None: data[%s]=hold%u",len(_.shadows),repr(what[1]),len(_.shadows))
+-			_.nest-=1
+-			_.c("if hold%u is not None: data[%s]=hold%u",_.nest,repr(what[1]),_.nest)
 -		elif what[0]=='block':
 -			_.c("if hold is not None: data[%s]=hold",repr(what[1]))
 -		_.indent=_.indent[:-4]
