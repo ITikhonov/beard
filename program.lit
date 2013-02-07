@@ -138,7 +138,7 @@
 -				gen.iiffalse(token[1:])
 -				stack.append(['if'])
 
-=example
+=example-patching
 
 -##{py##
 -def block_testdata(data,value,**kw):
@@ -147,7 +147,7 @@
 -	data['hamlet']='to be'
 -	data['beard']='BeardBeard'
 -	data['todo']=['Get milk','Pick up paycheck','Cash paycheck']
--	data['todo']=[{'no':i,'what':x} for i,x in enumerate(data['todo'])]
+-	data['todo']=[{'no':i,'what':x} for i,x in enumerate(data['todo'],1)]
 -####
 -##>testdata##
 
@@ -204,7 +204,7 @@
 -			elif '=' in token:
 -				var,name=token.split('=')
 -				gen.iblock(name,var)
--				stack.append(['block'])
+-				stack.append(['block',var])
 -			elif '>' in token:
 -				var,block=token.split('>')
 -				gen.icall(block,var)
@@ -223,11 +223,10 @@
 -				var,lst=token.split(':')
 -				gen.iiter(var,lst)
 -				shadows.insert(0,var)
--				stack.append(['for'])
+-				stack.append(['for',var])
 -			elif token=='':
 -				if stack[-1][0]=='for': shadows.pop(0)
--				gen.pop()
--				stack.pop()
+-				gen.pop(stack.pop())
 -			else:
 -				gen.ivar(token)
 -		else:
@@ -298,7 +297,7 @@
 -	def icode(_,code):
 -		_.code.insert(1,code)		
 
--	def pop(_):
+-	def pop(_,what):
 -		_.indent=_.indent[:-4]
 -		_.c("}")
 
@@ -334,13 +333,15 @@
 -		_.c0("elif compare(%s,%s):",repr(value),_.getvalue(var))
 
 -	def iiter(_,var,lst):
+-		_.c("hold%u=data.get(%s)",len(_.shadows),repr(var));
 -		_.c("for var%u in %s:",len(_.shadows),_.getvalue(lst))
 -		_.indent+='    '
+-		_.c("data[%s]=var%u",repr(var),len(_.shadows));
 
 -	def iblock(_,name,var):
 -		_.c("def block_%s(data,value,**kw):",name)
 -		_.indent+='    '
--		_.c("data=data.copy()",)
+-		_.c("hold=data.get(%s)",repr(var))
 -		_.c("data[%s]=value",repr(var))
 
 -	def iif(_,var,value):
@@ -367,7 +368,11 @@
 -	def icode(_,code):
 -		_.code.insert(1,code)		
 
--	def pop(_):
+-	def pop(_,what):
+-		if what[0]=='for':
+-			_.c("if hold%u is not None: data[%s]=hold%u",len(_.shadows),repr(what[1]),len(_.shadows))
+-		elif what[0]=='block':
+-			_.c("if hold is not None: data[%s]=hold",repr(what[1]))
 -		_.indent=_.indent[:-4]
 
 =defaults
@@ -488,6 +493,7 @@
 
 
 =>example.beard
+>example-patching
 >example
 
 =>example2.beard
