@@ -1,10 +1,13 @@
 
+	<p style="font-style:italic">Cause every pirate should have a Beard.</p>
+	<p style="text-align:right">&mdash; random pirate with beard</p>
+
 		Beard template language.
 
 	In the time of XMLHttpRequest need arise for templates to be used both
 	on server-side and client-side.
 
-	It's not hard when you use <s>same language</s>Javascript on both sides.
+	It's not hard when you use <s>same language</s>JavaScript on both sides.
 	But what to do if you are not fond of Node.js?
 
 	Well, you need a cross-language template engine!
@@ -32,6 +35,20 @@
 	template file. See? Beard don't try to force you into facial-futures related
 	religion, the ultimate goal of Beard is to conserve your precious time.
 
+
+		Syntax
+
+	Core syntax of Beard is very simple. It's a beard made of two hashes (number
+	or pound signs, depending on where are you from).
+
+	Here is the beard:
+
+	<p style="font-family: monospace; text-align: center">##</p>
+
+	So when you want to write Beard instruction, you enclose it into two
+	beards, two hashes each.
+
+	<p style="font-family: monospace; text-align: center">##beard##</p>
 
 =tokenize
 -def tokenize(t):
