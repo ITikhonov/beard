@@ -45,14 +45,195 @@
 
 	<p style="font-family: monospace; text-align: center">##</p>
 
-	So when you want to write Beard instruction, you enclose it into two
+	So when you want to instruct Beard to do something, you enclose command into two
 	beards, two hashes each.
+
+	To insert variable, named 'beard', use:
 
 	<p style="font-family: monospace; text-align: center">##beard##</p>
 
 =tokenize
 -def tokenize(t):
 -	return t.split('##')
+
+		Commands
+
+=generate
+-def generate(gen,tokens):
+-	stack=[]
+-	shadows=[]
+
+-	gen.shadows=shadows
+
+-	code=None
+-	for i in range(len(tokens)):
+-		token=tokens[i]
+-		if code is not None:
+-			if i%2 and token=='':
+-				if code: gen.icode(''.join(code))
+-				code=None
+-			else:
+-				if type(code)==list : code.append(token)
+-			continue
+
+-		if i%2:
+
+	Sometimes, beard clashes with template content. For example,
+	you need to insert beard right after hash symbol. If you simply
+	write
+
+=example
+
+-color: ###beard##;
+
+	it will be treated like an attempt to insert '#beard' variable.
+	Instead, use
+
+=example
+
+-##\##
+	to insert offending hash sign.
+
+=example
+-color: ##\####beard##;
+
+	Yeah, it looks ugly, hoping you won't encounter this much
+	on your journey.
+
+=generate
+-			if token=='\\':
+-				gen.ilit('#')
+
+=example
+
+-##@truth##
+-	Truth is true!
+-####
+
+=example
+
+-##@lie##
+-	There is no place for lie!
+-####
+
+=generate
+-			elif token.startswith('@'):
+-				gen.iiftrue(token[1:])
+-				stack.append(['if'])
+
+=example
+
+-##!truth##
+-	Truth is not a lie!
+-####
+
+=example
+
+-##!lie##
+-	Here comes a lie.
+-####
+
+=generate
+-			elif token.startswith('!'):
+-				gen.iiffalse(token[1:])
+-				stack.append(['if'])
+
+=example
+
+-##{py##
+-def block_testdata(data,value,**kw):
+-	data['truth']=True
+-	data['lie']=False
+-	data['hamlet']='to be'
+-	data['beard']='BeardBeard'
+-	data['todo']=['Get milk','Pick up paycheck','Cash paycheck']
+-	data['todo']=[{'no':i,'what':x} for i,x in enumerate(data['todo'])]
+-####
+-##>testdata##
+
+=example
+
+-##{py##
+-def block_upper(data,value,output,**kw):
+-	output(value.upper())
+-####
+-##{js##
+-function block_upper(data,value,output) {
+-	output(value.toUpperCase());
+-}
+-####
+
+=generate
+-			elif token.startswith('{'):
+-				code=[] if gen.tag==token[1:] else False
+
+=example
+
+-##to be?hamlet##
+-	To Be! :)
+-##not to be?##
+-	Not To Be :(
+-##question?##
+-	Is it a question?
+-##*##
+-	##hamlet## is not a question.
+-####
+
+=generate
+-			elif token.endswith('?'):
+-				gen.ielif(stack[-1][1],token[:-1])
+-			elif '?' in token:
+-				value,var=token.split('?')
+-				gen.iif(var,value)
+-				stack.append(['if',var])
+-			elif token=='*':
+-				gen.ielse()
+
+=example
+
+-##i=block##
+-	<div>Repeat, now with ##i##.</div>
+-####
+
+-##beard>block##
+-##hamlet>block##
+
+-Do you remember that block_upper? Here: ##hamlet>upper##
+
+=generate
+-			elif '=' in token:
+-				var,name=token.split('=')
+-				gen.iblock(name,var)
+-				stack.append(['block'])
+-			elif '>' in token:
+-				var,block=token.split('>')
+-				gen.icall(block,var)
+
+
+=example
+
+-<div>
+-##item:todo##
+-	<div>##item.no##) ##item.what##</div>
+-####
+-</div>
+
+=generate
+-			elif ':' in token:
+-				var,lst=token.split(':')
+-				gen.iiter(var,lst)
+-				shadows.insert(0,var)
+-				stack.append(['for'])
+-			elif token=='':
+-				if stack[-1][0]=='for': shadows.pop(0)
+-				gen.pop()
+-				stack.pop()
+-			else:
+-				gen.ivar(token)
+-		else:
+-			if token!='': gen.ilit(token)
+-	return gen.text()
+
 
 =jsgenerator
 -class JavascriptGenerator(object):
@@ -189,65 +370,6 @@
 -	def pop(_):
 -		_.indent=_.indent[:-4]
 
-=generate
--def generate(gen,tokens):
--	stack=[]
--	shadows=[]
-
--	gen.shadows=shadows
-
--	code=None
--	for i in range(len(tokens)):
--		token=tokens[i]
--		if code is not None:
--			if i%2 and token=='':
--				if code: gen.icode(''.join(code))
--				code=None
--			else:
--				if type(code)==list : code.append(token)
--			continue
-
--		if i%2:
--			if token=='\\':
--				gen.ilit('#')
--			elif token.startswith('{'):
--				code=[] if gen.tag==token[1:] else False
--			elif token.endswith('?'):
--				gen.ielif(stack[-1][1],token[:-1])
--			elif '>' in token:
--				var,block=token.split('>')
--				gen.icall(block,var)
--			elif ':' in token:
--				var,lst=token.split(':')
--				gen.iiter(var,lst)
--				shadows.insert(0,var)
--				stack.append(['for'])
--			elif '=' in token:
--				var,name=token.split('=')
--				gen.iblock(name,var)
--				stack.append(['block'])
--			elif '?' in token:
--				value,var=token.split('?')
--				gen.iif(var,value)
--				stack.append(['if',var])
--			elif token.startswith('@'):
--				gen.iiftrue(token[1:])
--				stack.append(['if'])
--			elif token.startswith('!'):
--				gen.iiffalse(token[1:])
--				stack.append(['if'])
--			elif token=='*':
--				gen.ielse()
--			elif token=='':
--				if stack[-1][0]=='for': shadows.pop(0)
--				gen.pop()
--				stack.pop()
--			else:
--				gen.ivar(token)
--		else:
--			if token!='': gen.ilit(token)
--	return gen.text()
-
 =defaults
 -import sys
 -def output(x):
@@ -366,6 +488,9 @@
 
 
 =>example.beard
+>example
+
+=>example2.beard
 -<html>
 -<head>
 -	<title>Hello, world</title>
