@@ -149,6 +149,18 @@
 -	data['todo']=['Get milk','Pick up paycheck','Cash paycheck']
 -	data['todo']=[{'no':i,'what':x} for i,x in enumerate(data['todo'],1)]
 -####
+-##{js##
+-function block_testdata(data) {
+-	data['truth']=true;
+-	data['lie']=false;
+-	data['hamlet']='to be';
+-	data['beard']='BeardBeard';
+-	data['todo']=['Get milk','Pick up paycheck','Cash paycheck'];
+-	var i; for(i=0;i<data['todo'].length;i++) {
+-		data['todo'][i]={no:i+1,what:data['todo'][i]};
+-	}
+-}
+-####
 -##>testdata##
 
 =example
@@ -263,14 +275,15 @@
 -		_.c0("} else if(compare(%s,%s)) {",repr(value),_.getvalue(var))
 
 -	def iiter(_,var,lst):
--		i=len(_.shadows)
--		_.c("var arr%u=%s; for(var idx%u=0;idx%u<arr%u.length;idx%u++) { var var%u=arr%u[idx%u]; ",i,_.getvalue(lst),i,i,i,i,i,i,i)
+-		_.c("for(var arr=%s,idx=0;idx<arr.length;idx++) {",_.getvalue(lst))
 -		_.indent+='    '
+-		_.c("var hold=data[%s]; ",repr(var))
+-		_.c("data[%s]=arr[idx]; ",repr(var))
 
 -	def iblock(_,name,var):
--		_.c("function block_%s(pdata,value) {",name)
+-		_.c("function block_%s(data,value) {",name)
 -		_.indent+='    '
--		_.c("var data={}; var i; for(i in pdata) data[i]=pdata[i];",)
+-		_.c("var hold=data[%s];",repr(var))
 -		_.c("data[%s]=value;",repr(var))
 
 -	def iif(_,var,value):
@@ -298,6 +311,8 @@
 -		_.code.insert(1,code)		
 
 -	def pop(_,what):
+-		if what[0]=='for':_.c("if(hold!=undefined) data[%s]=hold;",repr(what[1]))
+-		elif what[0]=='block': _.c("if(hold!=undefined) data[%s]=hold",repr(what[1]))
 -		_.indent=_.indent[:-4]
 -		_.c("}")
 
@@ -457,7 +472,7 @@
 =>beard.js
 -Beard={
 -	template: {},
--	output: function (x) { putstr(x); },
+-	output: function (x) { if(x!=undefined) putstr(x); },
 -
 -	getvalue: function(data,x) {
 -		var vs=x.split('.');
