@@ -150,7 +150,6 @@
 -		token=tokens[i]
 -		if code is not None:
 -			if i%2 and token=='':
--				print '!!!',code
 -				if code: gen.icode(''.join(code))
 -				code=None
 -			else:
@@ -217,17 +216,30 @@
 
 =compile
 -def compile(source):
+-	tokens=tokenize(source)
+-	template=generate(PythonGenerator(),tokens)
 -	g={}
 -	l={}
--	exec(source,g,l)
--	return l['template']
+-	exec(template,g,l)
+-	compiled=l['template']
+-	compiled.func_globals.update(l)
+-	return compiled
 
-=>beard.py
+=render
+-def render(template,data):
+-	s=[]
+-	def output(x):
+-		if x is not None: s.append(str(x))
+-	template(data,output=output)
+-	return ''.join(s)
+
+=>beard/beard.py
 >tokenize
 >generator
 >jsgenerator
 >generate
 >defaults
+>render
 >compile
 
 -def main(argv):
@@ -372,3 +384,37 @@
 
 -</body>
 -</html>
+
+=>beard/__init__.py
+-from .beard import render,compile,main,output,getvalue,compare
+
+=>beard/django_loader.py
+-from django.template.loaders import app_directories
+-from django.template.base import TemplateDoesNotExist
+-import beard
+
+-class Template:
+-   def __init__(self, source):
+-       self.template = beard.compile(source)
+-       
+-   def render(self, context):
+-       context_dict = {}
+-       for d in context.dicts:
+-           context_dict.update(d)
+-
+-       return beard.render(self.template, context_dict)
+
+-class Loader(app_directories.Loader):
+-    is_usable = True
+
+-    def load_template_source(self, template_name, template_dirs=None):
+-        if not template_name.endswith('.beard'): raise TemplateDoesNotExist(template_name)
+-        return super(Loader, self).load_template_source(template_name, template_dirs)
+
+-    def load_template(self, template_name, template_dirs=None):
+-        source, origin = self.load_template_source(template_name, template_dirs)
+-        template = Template(source)
+-        return template, origin
+
+
+
