@@ -6,6 +6,7 @@
 =jsgenerator
 -class JavascriptGenerator(object):
 -	def __init__(_,name):
+-		_.tag='js'
 -		_.code=[
 -			"Beard.template[%s]=function(data,value,output,getvalue,compare) {"%(repr(name))
 -		]
@@ -62,6 +63,9 @@
 -	def ilit(_,text):
 -		_.c("output(%s);",repr(text))
 
+-	def icode(_,code):
+-		_.code.insert(1,code)		
+
 -	def pop(_):
 -		_.indent=_.indent[:-4]
 -		_.c("}")
@@ -71,6 +75,7 @@
 =generator
 -class PythonGenerator(object):
 -	def __init__(_):
+-		_.tag='py'
 -		_.code=[
 -			"import beard",
 -			"def template(data,value=None,output=beard.output,getvalue=beard.getvalue,compare=beard.compare):"
@@ -127,6 +132,9 @@
 -	def ilit(_,text):
 -		_.c("output(%s)",repr(text))
 
+-	def icode(_,code):
+-		_.code.insert(1,code)		
+
 -	def pop(_):
 -		_.indent=_.indent[:-4]
 
@@ -137,12 +145,24 @@
 
 -	gen.shadows=shadows
 
+-	code=None
 -	for i in range(len(tokens)):
 -		token=tokens[i]
--		print token
+-		if code is not None:
+-			if i%2 and token=='':
+-				print '!!!',code
+-				if code: gen.icode(''.join(code))
+-				code=None
+-			else:
+-				if type(code)==list : code.append(token)
+-			continue
+
 -		if i%2:
--			print token
--			if token.endswith('?'):
+-			if token=='\\':
+-				gen.ilit('#')
+-			elif token.startswith('{'):
+-				code=[] if gen.tag==token[1:] else False
+-			elif token.endswith('?'):
 -				gen.ielif(stack[-1][1],token[:-1])
 -			elif '>' in token:
 -				var,block=token.split('>')
@@ -169,7 +189,6 @@
 -			elif token=='*':
 -				gen.ielse()
 -			elif token=='':
--				print '/',stack[-1]
 -				if stack[-1][0]=='for': shadows.pop(0)
 -				gen.pop()
 -				stack.pop()
@@ -211,8 +230,7 @@
 >defaults
 >compile
 
--def main():
--	from sys import argv
+-def main(argv):
 -	if argv[1]=='--test': return test()
 -	text=open(argv[1]).read()
 -	tokens=tokenize(text)
@@ -241,7 +259,9 @@
 -		'nestlist_var': [{'cond':'left'},{'cond':'center'},{'cond':'right'},{'cond':'unknown'}],
 -	})
 
--if __name__=='__main__': main()
+-if __name__=='__main__':
+-	from sys import argv
+-	main(argv)
 
 
 =>beard.js
