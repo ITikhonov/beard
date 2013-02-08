@@ -12,8 +12,97 @@
 
 	Well, you need a cross-language template engine!
 
-	Ahoy! Here come the Beard! Instead of abandoning logic on a religious
-	crusade for purity of ideas like our Mustache-wearing brothers, Beard
+		Cheat sheet
+
+=>quick.beard
+
+>quick.beard.init
+-Substition:   ##variable##
+
+-If block:     ##@variable##
+-                 only show when true
+-              ####
+
+-If..else:     ##@variable##
+-                 only show when true
+-              ##*##
+-                 only show when false
+-              ####
+
+-If not block: ##!variable##
+-                 only show when false
+-              ####
+
+-If not else:  ##!variable##
+-                 only show when false
+-              ##*##
+-                 only show when true
+-              ####
+
+-Choice:       ##one?variable##
+-                 only show when variable is "one"
+-              ##two?## - note, no variable specified
+-                 only show when variable is "two"
+-              ##*##
+-                 show when variable is something else
+-              ####
+
+-Blocks:       ##blockvar=blockname##
+-                 This block is called with ##blockvar##
+-              ####
+
+-Block call:   ##variable>blockname##
+
+-For..in:      ##item:list##
+-                 ##item##
+-              ####
+
+-Nested data:  ##dictvar.subdict.item##
+
+-Literal #:    ###hexcolor## is not what you want (it's beard, then #hexcolor, then beard).
+-              ##\####variable## will produce something like #ffffff.
+
+-Host blocks:
+
+-##{py##
+-def block_custom(data,value,output,getvalue,compare):
+-    """
+-        data is a dictionary with template variables
+-        value is a value of variable passed with block call
+-        output(x) converts x into string and writes it into template
+-        getvalue(x) will get value of x template variable
+-        compare(x,y) is cross-language comparison function
+-    """
+-    output(repr(data))
+-####
+
+-Roughly the same in JavaScript:
+
+-##{js##
+-function block_custom(data,value,output,getvalue,compare) {
+-    // the very same as above
+-    output(data.toString());
+-}
+-####
+
+-And now call it as ordinary block: ##variable>custom##
+
+=quick.beard.init
+
+-You can even do weird things with host blocks:
+
+-##{py##
+-def block_init(data,value,**kw):
+-    data['variable']='VARIABLE'
+-    data['list']=[1,2,3]
+-    data['dictvar']={'subdict':{'item':'NESTED ITEM'}}
+-####
+-##>init##
+
+		Why
+
+	Ahoy! Here comes the Beard! Instead of abandoning logic on a religious
+	crusade for purity of ideas like our Mustache-wearing comrades, Beard
 	design is dictated by practice.
 
 	To support expressions (like in {% if x==1 or y in "abc" %}), you need
@@ -32,8 +121,10 @@
 	iteration over lists and parametrized subtemplates.
 
 	It also allows to define computations in several host languages all in one
-	template file. See? Beard don't try to force you into facial-futures related
+	template file. See? Beard don't try to force you into facial-features related
 	religion, the ultimate goal of Beard is to conserve your precious time.
+
+		Versus Mustache
 
 
 		Syntax
@@ -62,8 +153,10 @@
 -def generate(gen,tokens):
 -	stack=[]
 -	code=None
+-	pos=0
 -	for i in range(len(tokens)):
 -		token=tokens[i]
+-		pos+=len(token)+2
 -		if code is not None:
 -			if i%2 and token=='':
 -				if code: gen.icode(''.join(code))
@@ -73,121 +166,16 @@
 -			continue
 
 -		if i%2:
-
-	Sometimes, beard clashes with template content. For example,
-	you need to insert beard right after hash symbol. If you simply
-	write
-
-=example
-
--color: ###beard##;
-
-	it will be treated like an attempt to insert '#beard' variable.
-	Instead, use
-
-=example
-
--##\##
-	to insert offending hash sign.
-
-=example
--color: ##\####beard##;
-
-	Yeah, it looks ugly, hoping you won't encounter this much
-	on your journey.
-
-=generate
 -			if token=='\\':
 -				gen.ilit('#')
-
-=example
-
--##@truth##
--	Truth is true!
--####
-
-=example
-
--##@lie##
--	There is no place for lie!
--####
-
-=generate
 -			elif token.startswith('@'):
 -				gen.iiftrue(token[1:])
 -				stack.append(['if'])
-
-=example
-
--##!truth##
--	Truth is not a lie!
--####
-
-=example
-
--##!lie##
--	Here comes a lie.
--####
-
-=generate
 -			elif token.startswith('!'):
 -				gen.iiffalse(token[1:])
 -				stack.append(['if'])
-
-=example-patching
-
--##{py##
--def block_testdata(data,value,**kw):
--	data['truth']=True
--	data['lie']=False
--	data['hamlet']='to be'
--	data['beard']='BeardBeard'
--	data['todo']=['Get milk','Pick up paycheck','Cash paycheck']
--	data['todo']=[{'no':i,'what':x} for i,x in enumerate(data['todo'],1)]
--####
--##{js##
--function block_testdata(data) {
--	data['truth']=true;
--	data['lie']=false;
--	data['hamlet']='to be';
--	data['beard']='BeardBeard';
--	data['todo']=['Get milk','Pick up paycheck','Cash paycheck'];
--	var i; for(i=0;i<data['todo'].length;i++) {
--		data['todo'][i]={no:i+1,what:data['todo'][i]};
--	}
--}
--####
--##>testdata##
-
-=example
-
--##{py##
--def block_upper(data,value,output,**kw):
--	output(value.upper())
--####
--##{js##
--function block_upper(data,value,output) {
--	output(value.toUpperCase());
--}
--####
-
-=generate
 -			elif token.startswith('{'):
 -				code=[] if gen.tag==token[1:] else False
-
-=example
-
--##to be?hamlet##
--	To Be! :)
--##not to be?##
--	Not To Be :(
--##question?##
--	Is it a question?
--##*##
--	##hamlet## is not a question.
--####
-
-=generate
 -			elif token.endswith('?'):
 -				gen.ielif(stack[-1][1],token[:-1])
 -			elif '?' in token:
@@ -196,19 +184,6 @@
 -				stack.append(['if',var])
 -			elif token=='*':
 -				gen.ielse()
-
-=example
-
--##i=block##
--	<div>Repeat, now with ##i##.</div>
--####
-
--##beard>block##
--##hamlet>block##
-
--Do you remember that block_upper? Here: ##hamlet>upper##
-
-=generate
 -			elif '=' in token:
 -				var,name=token.split('=')
 -				gen.iblock(name,var)
@@ -216,17 +191,6 @@
 -			elif '>' in token:
 -				var,block=token.split('>')
 -				gen.icall(block,var)
-
-
-=example
-
--<div>
--##item:todo##
--	<div>##item.no##) ##item.what##</div>
--####
--</div>
-
-=generate
 -			elif ':' in token:
 -				var,lst=token.split(':')
 -				gen.iiter(var,lst)
@@ -508,10 +472,6 @@
 
 
 =>example.beard
->example-patching
->example
-
-=>example2.beard
 -<html>
 -<head>
 -	<title>Hello, world</title>
@@ -581,6 +541,8 @@
 
 -</body>
 -</html>
+
+		Django
 
 =>beard/__init__.py
 -from .beard import render,source,compile,main
