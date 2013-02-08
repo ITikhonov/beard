@@ -427,15 +427,14 @@
 
 =>beard/django_static.py
 -from django.core.files.base import ContentFile
--from django.core.files.storage import FileSystemStorage
 -from django.contrib.staticfiles.finders import AppDirectoriesFinder
--from django.utils.importlib import import_module
--from django.contrib.staticfiles.storage import AppStaticStorage
--from django.template.loaders.app_directories import Loader as TemplateLoader
--from django.utils._os import safe_join
--import os
+-from django.contrib.staticfiles.storage import AppStaticStorage,staticfiles_storage
 -from . import source,JavascriptGenerator
+
+-import os
 -import sys
+
+-from django.conf import settings
 
 -class BeardJSStorage(AppStaticStorage):
 -    prefix = None
@@ -443,7 +442,6 @@
 -
 -    def __init__(self, app, *args, **kwargs):
 -        super(BeardJSStorage, self).__init__(app, *args, **kwargs)
-
 
 -    def _open(self, name, mode='rb'):
 -        if not name.endswith('.js'): raise NotImplementedError()
@@ -453,18 +451,6 @@
 -        text = open(self.path(name+'.beard'), mode).read()
 -        return ContentFile(source(text,JavascriptGenerator(name)))
 
--    def path(self, name):
--        raise NotImplementedError("This backend doesn't support absolute paths.")
-
--    def exists(self, name):
--        name=name[6:-3]+'.beard'
--        try:
--            path = safe_join(self.location, name)
--        except ValueError:
--            raise SuspiciousOperation("Attempted access to '%s' denied." % name)
--        path = os.path.normpath(path)
--        return os.path.exists(path)
-
 -    def _save(self, name, content):
 -        raise NotImplementedError()
 
@@ -472,7 +458,6 @@
 -    storage_class = BeardJSStorage
 
 -    def __init__(self, apps=None, *args, **kwargs):
--        self.loader=TemplateLoader()
 -        super(Finder, self).__init__(apps,*args, **kwargs)
 -
 -    def list(self, ignore_patterns):
@@ -482,17 +467,25 @@
 -                beards.append(('beard/'+name[:-6]+'.js',storage))
 -        return beards
 
--    def find_in_app(self, app, path):
--        storage = self.storages.get(app, None)
--        if storage:
--            if storage.prefix:
--                prefix = '%s%s' % (storage.prefix, os.sep)
--                if not path.startswith(prefix):
--                    return None
--                path = path[len(prefix):]
--            # only try to find a file if the source dir actually exists
--            if storage.exists(path):
--                matched_path = storage.path(path)
--                if matched_path:
--                    return matched_path
+-    def find(self, opath, all=False):
+-        if all:
+-           raise NotImplementedError()
+-        path=opath[6:-3]+'.beard'
+-        abspath=super(Finder,self).find(path)
+-        text = open(abspath).read()
+-        template=source(text,JavascriptGenerator(path[:-6]))
+
+-        dir=os.path.join(settings.STATIC_ROOT,os.path.dirname(path))
+-        try:
+-           os.makedirs(dir)
+-        except OSError:
+-           pass
+-        staticpath=os.path.join(settings.STATIC_ROOT,opath)
+-        f=open(staticpath,'w')
+-        f.write(template)
+-        f.close()
+-        
+-        return staticpath
+
+
 
