@@ -214,10 +214,14 @@
 -	if repr(x)==repr(y): return True
 -	return False
 
+=source
+-def source(text,gen):
+-	tokens=tokenize(text)
+-	return generate(gen,tokens)
+
 =compile
--def compile(source):
--	tokens=tokenize(source)
--	template=generate(PythonGenerator(),tokens)
+-def compile(text):
+-	template=source(text,PythonGenerator())
 -	g={}
 -	l={}
 -	exec(template,g,l)
@@ -237,6 +241,7 @@
 >tokenize
 >generator
 >jsgenerator
+>source
 >generate
 >defaults
 >render
@@ -386,7 +391,9 @@
 -</html>
 
 =>beard/__init__.py
--from .beard import render,compile,main,output,getvalue,compare
+-from .beard import render,source,compile,main
+-from .beard import output,getvalue,compare
+-from .beard import JavascriptGenerator
 
 =>beard/django_loader.py
 -from django.template.loaders import app_directories
@@ -417,4 +424,57 @@
 -        return template, origin
 
 
+
+=>beard/django_static.py
+-from django.core.files.base import ContentFile
+-from django.core.files.storage import FileSystemStorage
+-from django.contrib.staticfiles.finders import AppDirectoriesFinder
+-from django.utils.importlib import import_module
+-from django.contrib.staticfiles.storage import AppStaticStorage
+-import os
+-from . import source,JavascriptGenerator
+
+-class BeardJSStorage(AppStaticStorage):
+-    prefix = None
+-    source_dir = 'templates'
+-
+-    def __init__(self, app, *args, **kwargs):
+-        mod = import_module(app)
+-        mod_path = os.path.dirname(mod.__file__)
+-        location = os.path.join(mod_path, self.source_dir)
+-        super(AppStaticStorage, self).__init__(location, *args, **kwargs)
+
+
+-    def _open(self, name, mode='rb'):
+-        if not name.endswith('.js'): raise NotImplementedError()
+-        if not mode.startswith('r'): raise NotImplementedError()
+-        name=name[:-3]
+-        text = open(self.path(name+'.beard'), mode).read()
+-        return ContentFile(source(text,JavascriptGenerator(name)))
+-        
+-
+-    def _save(self, name, content):
+-        raise NotImplementedError()
+
+-class BeardAppDirectoriesFinder(AppDirectoriesFinder):
+-    storage_class = BeardJSStorage
+-
+-    def list(self, ignore_patterns):
+-        beards=[]
+-        for name,storage in super(BeardAppDirectoriesFinder,self).list(ignore_patterns):
+-            if name.endswith('.beard'):
+-                beards.append((name[:-6]+'.js',storage))
+-        return beards
+
+-    def find(self, path, all=False):
+-        if not path.startswith('/static/beard/'): return []
+-        path='templates/'+path[14:]
+-        matches = []
+-        for app in self.apps:
+-            match = super(BeardAppDirectoriesFinder,self).find_in_app(app, path)
+-            if match:
+-                if not all:
+-                    return match
+-                matches.append(match)
+-        return matches
 
