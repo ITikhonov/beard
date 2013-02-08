@@ -402,10 +402,14 @@
 -	if repr(x)==repr(y): return True
 -	return False
 
+=source
+-def source(text,gen):
+-	tokens=tokenize(text)
+-	return generate(gen,tokens)
+
 =compile
--def compile(source):
--	tokens=tokenize(source)
--	template=generate(PythonGenerator(),tokens)
+-def compile(text):
+-	template=source(text,PythonGenerator())
 -	g={}
 -	l={}
 -	exec(template,g,l)
@@ -425,6 +429,7 @@
 >tokenize
 >generator
 >jsgenerator
+>source
 >generate
 >defaults
 >render
@@ -578,7 +583,9 @@
 -</html>
 
 =>beard/__init__.py
--from .beard import render,compile,main,output,getvalue,compare
+-from .beard import render,source,compile,main
+-from .beard import output,getvalue,compare
+-from .beard import JavascriptGenerator
 
 =>beard/django_loader.py
 -from django.template.loaders import app_directories
@@ -607,6 +614,70 @@
 -        source, origin = self.load_template_source(template_name, template_dirs)
 -        template = Template(source)
 -        return template, origin
+
+
+
+=>beard/django_static.py
+-from django.core.files.base import ContentFile
+-from django.contrib.staticfiles.finders import AppDirectoriesFinder
+-from django.contrib.staticfiles.storage import AppStaticStorage,staticfiles_storage
+-from . import source,JavascriptGenerator
+
+-import os
+-import sys
+
+-from django.conf import settings
+
+-class BeardJSStorage(AppStaticStorage):
+-    prefix = None
+-    source_dir = 'templates'
+-
+-    def __init__(self, app, *args, **kwargs):
+-        super(BeardJSStorage, self).__init__(app, *args, **kwargs)
+
+-    def _open(self, name, mode='rb'):
+-        if not name.endswith('.js'): raise NotImplementedError()
+-        if not name.startswith('beard/'): raise NotImplementedError()
+-        if not mode.startswith('r'): raise NotImplementedError()
+-        name=name[6:-3]
+-        text = open(self.path(name+'.beard'), mode).read()
+-        return ContentFile(source(text,JavascriptGenerator(name)))
+
+-    def _save(self, name, content):
+-        raise NotImplementedError()
+
+-class Finder(AppDirectoriesFinder):
+-    storage_class = BeardJSStorage
+
+-    def __init__(self, apps=None, *args, **kwargs):
+-        super(Finder, self).__init__(apps,*args, **kwargs)
+-
+-    def list(self, ignore_patterns):
+-        beards=[]
+-        for name,storage in super(Finder,self).list(ignore_patterns):
+-            if name.endswith('.beard'):
+-                beards.append(('beard/'+name[:-6]+'.js',storage))
+-        return beards
+
+-    def find(self, opath, all=False):
+-        if all:
+-           raise NotImplementedError()
+-        path=opath[6:-3]+'.beard'
+-        abspath=super(Finder,self).find(path)
+-        text = open(abspath).read()
+-        template=source(text,JavascriptGenerator(path[:-6]))
+
+-        dir=os.path.join(settings.STATIC_ROOT,os.path.dirname(path))
+-        try:
+-           os.makedirs(dir)
+-        except OSError:
+-           pass
+-        staticpath=os.path.join(settings.STATIC_ROOT,opath)
+-        f=open(staticpath,'w')
+-        f.write(template)
+-        f.close()
+-        
+-        return staticpath
 
 
 
