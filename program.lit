@@ -431,50 +431,68 @@
 -from django.contrib.staticfiles.finders import AppDirectoriesFinder
 -from django.utils.importlib import import_module
 -from django.contrib.staticfiles.storage import AppStaticStorage
+-from django.template.loaders.app_directories import Loader as TemplateLoader
+-from django.utils._os import safe_join
 -import os
 -from . import source,JavascriptGenerator
+-import sys
 
 -class BeardJSStorage(AppStaticStorage):
 -    prefix = None
 -    source_dir = 'templates'
 -
 -    def __init__(self, app, *args, **kwargs):
--        mod = import_module(app)
--        mod_path = os.path.dirname(mod.__file__)
--        location = os.path.join(mod_path, self.source_dir)
--        super(AppStaticStorage, self).__init__(location, *args, **kwargs)
+-        super(BeardJSStorage, self).__init__(app, *args, **kwargs)
 
 
 -    def _open(self, name, mode='rb'):
 -        if not name.endswith('.js'): raise NotImplementedError()
+-        if not name.startswith('beard/'): raise NotImplementedError()
 -        if not mode.startswith('r'): raise NotImplementedError()
--        name=name[:-3]
+-        name=name[6:-3]
 -        text = open(self.path(name+'.beard'), mode).read()
 -        return ContentFile(source(text,JavascriptGenerator(name)))
--        
--
+
+-    def path(self, name):
+-        raise NotImplementedError("This backend doesn't support absolute paths.")
+
+-    def exists(self, name):
+-        name=name[6:-3]+'.beard'
+-        try:
+-            path = safe_join(self.location, name)
+-        except ValueError:
+-            raise SuspiciousOperation("Attempted access to '%s' denied." % name)
+-        path = os.path.normpath(path)
+-        return os.path.exists(path)
+
 -    def _save(self, name, content):
 -        raise NotImplementedError()
 
--class BeardAppDirectoriesFinder(AppDirectoriesFinder):
+-class Finder(AppDirectoriesFinder):
 -    storage_class = BeardJSStorage
+
+-    def __init__(self, apps=None, *args, **kwargs):
+-        self.loader=TemplateLoader()
+-        super(Finder, self).__init__(apps,*args, **kwargs)
 -
 -    def list(self, ignore_patterns):
 -        beards=[]
--        for name,storage in super(BeardAppDirectoriesFinder,self).list(ignore_patterns):
+-        for name,storage in super(Finder,self).list(ignore_patterns):
 -            if name.endswith('.beard'):
--                beards.append((name[:-6]+'.js',storage))
+-                beards.append(('beard/'+name[:-6]+'.js',storage))
 -        return beards
 
--    def find(self, path, all=False):
--        if not path.startswith('/static/beard/'): return []
--        path='templates/'+path[14:]
--        matches = []
--        for app in self.apps:
--            match = super(BeardAppDirectoriesFinder,self).find_in_app(app, path)
--            if match:
--                if not all:
--                    return match
--                matches.append(match)
--        return matches
+-    def find_in_app(self, app, path):
+-        storage = self.storages.get(app, None)
+-        if storage:
+-            if storage.prefix:
+-                prefix = '%s%s' % (storage.prefix, os.sep)
+-                if not path.startswith(prefix):
+-                    return None
+-                path = path[len(prefix):]
+-            # only try to find a file if the source dir actually exists
+-            if storage.exists(path):
+-                matched_path = storage.path(path)
+-                if matched_path:
+-                    return matched_path
 
