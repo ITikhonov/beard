@@ -74,7 +74,7 @@
 -        getvalue(x) will get value of x template variable
 -        compare(x,y) is cross-language comparison function
 -    """
--    output(repr(data))
+-    output(len(data))
 -####
 
 -Roughly the same in JavaScript:
@@ -82,7 +82,9 @@
 -##{js##
 -function block_custom(data,value,output,getvalue,compare) {
 -    // the very same as above
--    output(data.toString());
+-    var n=0;
+-    for(var i in data) n++;
+-    output(n);
 -}
 -####
 -And now call it as ordinary block: ##variable>custom##
@@ -99,6 +101,13 @@
 -    data['variable']='VARIABLE'
 -    data['list']=[1,2,3]
 -    data['dictvar']={'subdict':{'item':'NESTED ITEM'}}
+-####
+-##{js##
+-function block_init(data) {
+-    data['variable']='VARIABLE';
+-    data['list']=[1,2,3];
+-    data['dictvar']={'subdict':{'item':'NESTED ITEM'}};
+-}
 -####
 -##>init##
 
@@ -139,6 +148,10 @@
 
 	<p style="font-family: monospace; text-align: center">##</p>
 
+=tokenize
+-def tokenize(t):
+-	return t.split('##')
+
 	So when you want to instruct Beard to do something, you enclose command into two
 	beards, two hashes each.
 
@@ -146,9 +159,6 @@
 
 	<p style="font-family: monospace; text-align: center">##beard##</p>
 
-=tokenize
--def tokenize(t):
--	return t.split('##')
 
 		Commands
 
@@ -462,9 +472,9 @@
 
 =>test.js
 -load("beard.js")
--load("example.js")
+-load("quick.js")
 
--Beard.render('example',{
+-Beard.render('quick',{
 -	'simple_var': 'Simple Variable',
 -	'simple_cond_var': true,
 -	'list_var': ['left','center','right','unknown'],
