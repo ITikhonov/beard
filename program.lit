@@ -138,6 +138,25 @@
 
 		Versus Mustache
 
+		Data
+
+	Beard template accepts single JSON object as input. It means only strings,
+	numbers, arrays and nested objects are guaranteed to work consitently cross-
+	language.
+
+=example-data
+-{
+-	'booltrue'	: 1==1,
+-	'boolfalse'	: 1==2,
+-	'zero'		: 0,
+-	'nonzero'	: -1,
+-	'string'	: 'this is a string',
+-	'emptystring'	: '',
+-	'list'		: [1,2,3],
+-	'emptylist'	: [],
+-	'object'	: {'a':1},
+-}
+
 
 		Syntax
 
@@ -170,33 +189,41 @@
 =generate.substition
 -gen.ivar(token)
 
-	To only output things if variable exists and is true, non-empty list or non-empty
-	string, put ##@variable## before these things and end them with ####.
+	To only output things if variable exists and is true, non-empty list, non-zero or non-empty
+	string, put <code>##@variable##</code> before these things and end them with <code>####</code>.
+
+	Note, that operation on objects is undefined.
 
 =example
--<div>If true:
+
+-If true:
 -	##@booltrue##
--		<div>shown</div>
+-		shown boolean true
+-	####
+-	##@nonzero##
+-		shown non-zero
 -	####
 -	##@list##
--		<div>shown</div>
+-		shown non-empty list
 -	####
 -	##@string##
--		<div>shown</div>
+-		shown non-empty string
 -	####
 -	##@boolfalse##
--		<div>NOT SHOWN</div>
+-		NOT SHOWN (boolfalse)
+-	####
+-	##@zero##
+-		NOT SHOWN (zero)
 -	####
 -	##@emptylist##
--		<div>NOT SHOWN</div>
+-		NOT SHOWN (emptylist)
 -	####
 -	##@emptystring##
--		<div>NOT SHOWN</div>
+-		NOT SHOWN (emptystring)
 -	####
 -	##@nonexistent##
--		<div>NOT SHOWN</div>
+-		NOT SHOWN (nonexistent)
 -	####
--</div>
 
 =generate.truth
 -elif token.startswith('@'):
@@ -204,7 +231,141 @@
 -	stack.append(['if'])
 
 
+	To only output things if variable does not exists, is false, zero, empty list
+	or empty string, put <code>#!variable##</code> before these things and
+	end them with <code>####</code>.
 
+	Note, that operation on objects is undefined.
+
+=example
+
+-If false:
+-	##!booltrue##
+-		NOT SHOWN (booltrue)
+-	####
+-	##!nonzero##
+-		NOT SHOW (nonzero)
+-	####
+-	##!list##
+-		NOT SHOWN (list)
+-	####
+-	##!string##
+-		NOT SHOWN (string)
+-	####
+-	##!boolfalse##
+-		shown boolean false
+-	####
+-	##!zero##
+-		shown zero
+-	####
+-	##!emptylist##
+-		shown empty list
+-	####
+-	##!emptystring##
+-		shown empty string
+-	####
+-	##!nonexistent##
+-		shown non-existent
+-	####
+
+=generate.false
+-elif token.startswith('!'):
+-	gen.iiffalse(token[1:])
+-	stack.append(['if'])
+
+	If you want to choose what to render depending on value of
+	variable, use question mark.
+
+	First choice define what variable will be used for
+	comparison: <code>##first?variable##</code>.
+
+	Subsequent choices DO NOT specify variable they just ask a
+	question: <code>##second?##</code>, <code>##third?##</code>
+
+	Last question could be <code>##*##</code> to match anything.
+
+	Whole thing ends with <code>####</code>.
+
+	Behaviour of choice on anything except strings and numbers is
+	undefined.
+
+=example
+
+-Choice:
+-	##apple?string##
+-		NOT SHOWN
+-	##nut?##
+-		NOT SHOWN
+-	##?##
+-		NOT SHOWN
+-	##*##
+-		shown
+-	####
+
+-	##apple?emptystring##
+-		NOT SHOWN
+-	##nut?##
+-		NOT SHOWN
+-	##?##
+-		shown
+-	##*##
+-		NOT SHOWN
+-	####
+
+-	##apple?string##
+-		NOT SHOWN
+-	##nut?##
+-		NOT SHOWN
+-	##?##
+-		NOT SHOWN
+-	##this is a string?##
+-		shown
+-	##*##
+-		NOT SHOWN
+-	####
+
+-	##apple?nonzero##
+-		NOT SHOWN
+-	##nut?##
+-		NOT SHOWN
+-	##?##
+-		NOT SHOWN
+-	##-1?##
+-		shown
+-	##*##
+-		NOT SHOWN
+-	####
+
+
+=generate.choice
+-elif token.endswith('?'):
+-	gen.ielif(stack[-1][1],token[:-1])
+-elif '?' in token:
+-	value,var=token.split('?')
+-	gen.iif(var,value)
+-	stack.append(['if',var])
+-elif token=='*':
+-	gen.ielse()
+
+	To iterate over array use colon like <code>##item:list##</code>. Everything
+	between this and relevant <code>####</code> will be repeated for each element
+	of array. This element will be bound to variable whose name is specified before
+	colon. This binding do not exist outside of iteration.
+
+=example
+-Iteration:
+-	##i:list##
+-		##i##
+-	####
+-	##i:emptylist##
+-		NOT SHOWN
+-	####
+
+=generate.iteration
+-elif ':' in token:
+-	var,lst=token.split(':')
+-	gen.iiter(var,lst)
+-	stack.append(['for',var])
 
 		Commands
 
@@ -228,19 +389,10 @@
 -			if token=='\\':
 -				gen.ilit('#')
 >			generate.truth
--			elif token.startswith('!'):
--				gen.iiffalse(token[1:])
--				stack.append(['if'])
+>			generate.false
 -			elif token.startswith('{'):
 -				code=[] if gen.tag==token[1:] else False
--			elif token.endswith('?'):
--				gen.ielif(stack[-1][1],token[:-1])
--			elif '?' in token:
--				value,var=token.split('?')
--				gen.iif(var,value)
--				stack.append(['if',var])
--			elif token=='*':
--				gen.ielse()
+>			generate.choice
 -			elif '=' in token:
 -				var,name=token.split('=')
 -				gen.iblock(name,var)
@@ -248,10 +400,7 @@
 -			elif '>' in token:
 -				var,block=token.split('>')
 -				gen.icall(block,var)
--			elif ':' in token:
--				var,lst=token.split(':')
--				gen.iiter(var,lst)
--				stack.append(['for',var])
+>			generate.iteration
 -			elif token=='':
 -				gen.pop(stack.pop())
 -			else:
@@ -266,7 +415,8 @@
 -	def __init__(_,name):
 -		_.tag='js'
 -		_.code=[
--			"Beard.template[%s]=function(data,value,output,getvalue,compare) {"%(repr(name))
+-			"Beard.template[%s]=function(data,value,output,getvalue,compare) {"%(repr(name)),
+-			"    function _istrue(x) { if(x && x.length!=undefined) return x.length>0; return x; }"
 -		]
 -		_.indent="    "
 
@@ -305,11 +455,11 @@
 -		_.indent+='    '
 
 -	def iiftrue(_,var):
--		_.c("if(%s) {",_.getvalue(var))
+-		_.c("if(_istrue(%s)) {",_.getvalue(var))
 -		_.indent+='    '
 
 -	def iiffalse(_,var):
--		_.c("if(!%s) {",_.getvalue(var))
+-		_.c("if(!_istrue(%s)) {",_.getvalue(var))
 -		_.indent+='    '
 
 -	def ielse(_):
@@ -515,10 +665,11 @@
 -};
 
 =>test.js
--load("beard.js")
--load("quick.js")
+-name=arguments[0];
+-load("beard.js");
+-load(name+'.js');
 
--Beard.render('quick',{
+-Beard.render(name,{
 -	'simple_var': 'Simple Variable',
 -	'simple_cond_var': true,
 -	'list_var': ['left','center','right','unknown'],
@@ -526,9 +677,28 @@
 -	'nestlist_var': [{'cond':'left'},{'cond':'center'},{'cond':'right'},{'cond':'unknown'}],
 -});
 
-
-
 =>example.beard
+-##{py##
+-def block_init(data,value,**kw):
+-	data.update(
+>		example-data
+-	)
+-####
+-##{js##
+-function block_init(data) {
+-	var test = (
+>		example-data
+-	);
+-	for(var i in test) {
+-		data[i]=test[i];
+-	}
+-}
+-####
+-##>init##
+>example
+
+
+=>example2.beard
 -<html>
 -<head>
 -	<title>Hello, world</title>
