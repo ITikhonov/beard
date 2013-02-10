@@ -16,6 +16,7 @@
 
 =>quick.beard
 
+-<pre>
 >quick.beard.init
 -Substition:   ##variable##
 
@@ -62,7 +63,7 @@
 -Literal #:    ###hexcolor## is not what you want (it's beard, then #hexcolor, then beard).
 -              ##\####variable## will produce something like #ffffff.
 
--Host blocks:
+-Host language blocks:
 
 -##{py##
 -def block_custom(data,value,output,getvalue,compare):
@@ -84,8 +85,10 @@
 -    output(data.toString());
 -}
 -####
-
 -And now call it as ordinary block: ##variable>custom##
+
+-</pre>
+-Yes, that's all in a single template file
 
 =quick.beard.init
 
@@ -120,7 +123,7 @@
 	But what Beard has? Beard has conditional rendering, including switch,
 	iteration over lists and parametrized subtemplates.
 
-	It also allows to define computations in several host languages all in one
+	Also it allows to define computations in several host languages all in one
 	template file. See? Beard don't try to force you into facial-features related
 	religion, the ultimate goal of Beard is to conserve your precious time.
 
