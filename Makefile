@@ -5,7 +5,6 @@ all:
 test:
 	make
 	python2 beard/beard.py quick.beard
-	echo should be
-	echo f355c63a4a83122931effe83f67e35de
+	echo 28028741e9731a04a0f4d0913158d590
 	PYTHONPATH=`pwd` python2 beard/beard.py --test quick | md5sum
 	js test.js | md5sum

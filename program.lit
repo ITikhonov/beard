@@ -155,9 +155,55 @@
 	So when you want to instruct Beard to do something, you enclose command into two
 	beards, two hashes each.
 
-	To insert variable, named 'beard', use:
+	To insert variable, use beard then variable name, then beard again:
 
-	<p style="font-family: monospace; text-align: center">##beard##</p>
+=example
+-<div>Here, 'this is a string' without quotes is shown: ##string##</div>
+
+	Instead of non-existent variables nothing is substuted.
+
+=example
+-<div>Just two quotes: '##nonexistent##'</div>
+
+	Substition for anything except variable, containing a string is undefined behaviour.
+
+=generate.substition
+-gen.ivar(token)
+
+	To only output things if variable exists and is true, non-empty list or non-empty
+	string, put ##@variable## before these things and end them with ####.
+
+=example
+-<div>If true:
+-	##@booltrue##
+-		<div>shown</div>
+-	####
+-	##@list##
+-		<div>shown</div>
+-	####
+-	##@string##
+-		<div>shown</div>
+-	####
+-	##@boolfalse##
+-		<div>NOT SHOWN</div>
+-	####
+-	##@emptylist##
+-		<div>NOT SHOWN</div>
+-	####
+-	##@emptystring##
+-		<div>NOT SHOWN</div>
+-	####
+-	##@nonexistent##
+-		<div>NOT SHOWN</div>
+-	####
+-</div>
+
+=generate.truth
+-elif token.startswith('@'):
+-	gen.iiftrue(token[1:])
+-	stack.append(['if'])
+
+
 
 
 		Commands
@@ -181,9 +227,7 @@
 -		if i%2:
 -			if token=='\\':
 -				gen.ilit('#')
--			elif token.startswith('@'):
--				gen.iiftrue(token[1:])
--				stack.append(['if'])
+>			generate.truth
 -			elif token.startswith('!'):
 -				gen.iiffalse(token[1:])
 -				stack.append(['if'])
@@ -211,7 +255,7 @@
 -			elif token=='':
 -				gen.pop(stack.pop())
 -			else:
--				gen.ivar(token)
+>				generate.substition
 -		else:
 -			if token!='': gen.ilit(token)
 -	return gen.text()
