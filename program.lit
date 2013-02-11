@@ -157,7 +157,6 @@
 -	'object'	: {'field':'field-value'},
 -}
 
-
 		Syntax
 
 	Core syntax of Beard is very simple. It's a beard made of two hashes (number
@@ -178,15 +177,21 @@
 
 =example
 
--<div>Here, 'this is a string' without quotes is shown: ##string##</div>
+-Here, 'this is a string' without quotes is shown: ##string##
 
 	Instead of non-existent variables nothing is substuted.
 
 =example
 
--<div>Just two quotes: '##nonexistent##'</div>
+-Just two quotes: '##nonexistent##'
 
 	Substition for anything except variable, containing a string is undefined behaviour.
+
+	Nested objects can be addressed with conventional dot-syntax:
+
+=example
+-Object field: ##object.field##
+-Non-existig object field: ##notexistent.field##
 
 =generate.substition
 -gen.ivar(token)
@@ -733,6 +738,7 @@
 -	v=data
 -	for y in vs:
 -		v=v.get(y)
+-		if v is None: return None
 -	return v
 
 -def compare(x,y):
