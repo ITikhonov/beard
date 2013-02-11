@@ -154,7 +154,7 @@
 -	'emptystring'	: '',
 -	'list'		: [1,2,3],
 -	'emptylist'	: [],
--	'object'	: {'a':1},
+-	'object'	: {'field':'field-value'},
 -}
 
 
@@ -177,11 +177,13 @@
 	To insert variable, use beard then variable name, then beard again:
 
 =example
+
 -<div>Here, 'this is a string' without quotes is shown: ##string##</div>
 
 	Instead of non-existent variables nothing is substuted.
 
 =example
+
 -<div>Just two quotes: '##nonexistent##'</div>
 
 	Substition for anything except variable, containing a string is undefined behaviour.
@@ -189,7 +191,7 @@
 =generate.substition
 -gen.ivar(token)
 
-	To only output things if variable exists and is true, non-empty list, non-zero or non-empty
+	To only output things when variable exists and is true, non-empty list, non-zero or non-empty
 	string, put <code>##@variable##</code> before these things and end them with <code>####</code>.
 
 	Note, that operation on objects is undefined.
@@ -231,7 +233,7 @@
 -	stack.append(['if'])
 
 
-	To only output things if variable does not exists, is false, zero, empty list
+	To only output things when variable does not exists, is false, zero, empty list
 	or empty string, put <code>#!variable##</code> before these things and
 	end them with <code>####</code>.
 
@@ -353,6 +355,7 @@
 	colon. This binding do not exist outside of iteration.
 
 =example
+
 -Iteration:
 -	##i:list##
 -		##i##
@@ -367,7 +370,179 @@
 -	gen.iiter(var,lst)
 -	stack.append(['for',var])
 
-		Commands
+	To define things, which will be repeated with small alteration, use
+	<code>##binding=blockname##</code>. Everything between that and relevant
+	<code>####</code> won't be shown right there, but when you write
+	<code>##variable>blockname##</code> later.
+
+	Value of that <code>variable</code>, specified when inserting block
+	can be accessed under name <code>binding</code>.
+
+	You can omit <code>binding</code>, <code>variable</code> or both. Value
+	of binding in block when variable is omited is unspecified. If binding
+	is omited passed variable is not taken in account.
+
+=example
+
+-Block:
+-	##value=block##
+-		shown: ##value##
+-	####
+-	##i:list##
+-		##i>block##
+-	####
+
+-	##string>block##
+-	##nonexistent>block##
+-	##>block##
+
+-	##=repeat##
+-		shown
+-	####
+-	##>repeat##
+
+
+	
+
+=generate.block
+-elif '=' in token:
+-	var,name=token.split('=')
+-	gen.iblock(name,var)
+-	stack.append(['block',var])
+-elif '>' in token:
+-	var,block=token.split('>')
+-	gen.icall(block,var)
+
+
+	Sometimes you need more then Beard can natively provide and
+	you need a power of host language. You can do that by writing
+	blocks in host languages, just note you'll probably need to
+	write own implementation for each of them.
+
+	Host language blocks are executed just like ordinary template
+	blocks with <code>##variable>blockname##</code> syntax.
+
+	In both Python and JavaScript, block is a function with 'block_' prefix, rest
+	is a block name to be referenced from template.
+
+	This function receives 5 arguments: data, value, output, getvalue, compare.
+
+=example
+-Host language block:
+
+-##{py##
+-def block_example(data,value,output,getvalue,compare):
+>example-block-py
+-####
+
+-##{js##
+-function block_example(data,value,output,getvalue,compare) {
+>example-block-js
+-}
+-####
+-##string>example##
+
+
+	1st argument (data) is a current bindings. It's what you passed into
+	template for rendering, except it may be slightly altered by interations
+	and block calls. This bindings are mutable, so you can change them and
+	this will affect template for the rest of it's life.
+
+=example-block-py
+-	data['changed']="changed in block"
+
+=example-block-js
+-	data.changed="changed in block";
+
+	2nd argument (value) is a value of variable, passed when block is
+	inserted with <code>##variable>block##</code>. What happens if you change
+	this value is undefined in general, but changing objects and arrays will
+	work in both JavaScript and Python with some care.
+
+=example-block-py
+-	data['example_value']=value
+
+=example-block-js
+-	data.example_value=value;
+
+	3rd argument (output) is a callable, which accepts single argument
+	convert it into string and insert into template at relevant point.
+
+=example-block-py
+-	output(value)
+
+=example-block-js
+-	output(value);
+
+	4th argument (getvalue) is a callable, which accepts two arguments
+	returns value of specified binding in data. First argument is binding
+	object (data) to search in, and second is variable name to search for.
+
+=example-block-py
+-	output(getvalue(data,value))
+
+=example-block-js
+-	output(getvalue(data,value));
+
+	5th argument (compare) is a generic comparison function of two arguments,
+	consistent across host languages. Returns true if equal, false otherwise.
+	
+=example-block-py
+-	output('equal' if compare(value,1) else 'different')
+
+=example-block-js
+-	output(compare(value,1)?'equal':'different')
+
+	Here is an example block, which capitalizes string, passed to it:
+
+=example
+
+-##{py##
+-def block_uppercase(data,value,output,getvalue,compare):
+-	output(value.upper());
+-####
+-##{js##
+-function block_uppercase(data,value,output) {
+-	output(value.toUpperCase());
+-}
+-####
+-	And now show in all caps: ##string>uppercase##
+
+=generate.code.start
+-elif token.startswith('{'):
+-	code=[] if gen.tag==token[1:] else False
+
+=generate.code.loop
+-if code is not None:
+-	if i%2 and token=='':
+-		if code: gen.icode(''.join(code))
+-		code=None
+-	else:
+-		if type(code)==list : code.append(token)
+-	continue
+
+	And last, but not least. Sometimes you have a hash symbol
+	interfering with beard. Like in this CSS:
+
+=example
+
+-False beard:
+-	###string##
+-
+
+	It won't resolve into value of variable <code>string</code> with
+	preceding hash, instead it will try to insert value of
+	variable <code>#string</code>
+	(<code><span style="color:red">##</span>#string<span style="color:red">##</span></code>).
+
+	To overcome this, insert offending hash with ugly <code>##\##</code>.
+
+=example
+
+-True beard
+-	##\####string##
+
+		Host API
 
 =generate
 -def generate(gen,tokens):
@@ -377,29 +552,17 @@
 -	for i in range(len(tokens)):
 -		token=tokens[i]
 -		pos+=len(token)+2
--		if code is not None:
--			if i%2 and token=='':
--				if code: gen.icode(''.join(code))
--				code=None
--			else:
--				if type(code)==list : code.append(token)
--			continue
+
+>		generate.code.loop
 
 -		if i%2:
 -			if token=='\\':
 -				gen.ilit('#')
 >			generate.truth
 >			generate.false
--			elif token.startswith('{'):
--				code=[] if gen.tag==token[1:] else False
+>			generate.code.start
 >			generate.choice
--			elif '=' in token:
--				var,name=token.split('=')
--				gen.iblock(name,var)
--				stack.append(['block',var])
--			elif '>' in token:
--				var,block=token.split('>')
--				gen.icall(block,var)
+>			generate.block
 >			generate.iteration
 -			elif token=='':
 -				gen.pop(stack.pop())
@@ -506,7 +669,8 @@
 -		return 'getvalue(data,%s)'%(repr(x),)
 
 -	def icall(_,block,var):
--		_.c("(%s if %s else block_%s)(data,%s,output=output,getvalue=getvalue,compare=compare)",_.getvalue(block),_.getvalue(block),block,_.getvalue(var))
+-		_.c("(%s if %s else block_%s)(data,%s,output=output,getvalue=getvalue,compare=compare)",
+-			_.getvalue(block),_.getvalue(block),block,_.getvalue(var) if var else 'None')
 
 -	def ielif(_,var,value):
 -		_.c0("elif compare(%s,%s):",repr(value),_.getvalue(var))
@@ -521,8 +685,9 @@
 -	def iblock(_,name,var):
 -		_.c("def block_%s(data,value,**kw):",name)
 -		_.indent+='    '
--		_.c("hold=data.get(%s)",repr(var))
--		_.c("data[%s]=value",repr(var))
+-		if var:
+-			_.c("hold=data.get(%s)",repr(var))
+-			_.c("data[%s]=value",repr(var))
 
 -	def iif(_,var,value):
 -		_.c("if compare(%s,%s):",repr(value),_.getvalue(var))
@@ -553,7 +718,8 @@
 -			_.nest-=1
 -			_.c("if hold%u is not None: data[%s]=hold%u",_.nest,repr(what[1]),_.nest)
 -		elif what[0]=='block':
--			_.c("if hold is not None: data[%s]=hold",repr(what[1]))
+-			if what[1]:
+-				_.c("if hold is not None: data[%s]=hold",repr(what[1]))
 -		_.indent=_.indent[:-4]
 
 =defaults
