@@ -24,35 +24,35 @@
 	that beard template file compiled into python .py and
 	JavaScript .js file.
 
-	To compile example.beard, run
+	To compile quick.beard, run
 
-	<i>python -m beard.beard example.beard</i>
+	<i>python -m beard.beard quick.beard</i>
 
-	This will produce example.py and example.js.
+	This will produce quick.py and quick.js.
 
 	Now from python:
 
-=>test_example.py
+=>test_quick.py
 
 -import beard
--import example
+-import quick
 
--print beard.render(example.template,{'some':'data'})
+-print beard.render(quick.template,{'some':'data'})
 
 	From HTML:
 
-=>test_example.html
+=>test_quick.html
 
 -<html>
 -<head>
 -<script src="beard.js"></script>
--<script src="example.js"></script>
+-<script src="quick.js"></script>
 -</head>
 
 -<body><pre></pre></body>
 
 -<script>
--	document.body.firstChild.innerHTML=Beard.render('example',{some:'data'});
+-	document.body.firstChild.innerHTML=Beard.render('quick',{some:'data'});
 -</script>
 -</html>
 
@@ -61,7 +61,6 @@
 
 =>quick.beard
 
--<pre>
 >quick.beard.init
 -Substition:   ##variable##
 
@@ -134,7 +133,6 @@
 -####
 -And now call it as ordinary block: ##variable>custom##
 
--</pre>
 -Yes, that's all in a single template file
 
 =quick.beard.init
