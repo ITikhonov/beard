@@ -1,6 +1,6 @@
 
-	<p style="font-style:italic">Cause every pirate should have a Beard.</p>
-	<p style="text-align:right">&mdash; random pirate with beard</p>
+	<p style="font-style:italic">'Cause every pirate should have Beard.</p>
+	<p style="text-align:right">&mdash; a random pirate with a beard</p>
 
 		Beard template language.
 
@@ -113,7 +113,7 @@
 
 		Why
 
-	Ahoy! Here comes the Beard! Instead of abandoning logic on a religious
+	Ahoy! Here comes Beard! Instead of abandoning logic on a religious
 	crusade for purity of ideas like our Mustache-wearing comrades, Beard
 	design is dictated by practice.
 
@@ -239,7 +239,7 @@
 
 
 	To only output things when variable does not exists, is false, zero, empty list
-	or empty string, put <code>#!variable##</code> before these things and
+	or empty string, put <code>##!variable##</code> before these things and
 	end them with <code>####</code>.
 
 	Note, that operation on objects is undefined.
