@@ -22,6 +22,8 @@
 
 	Execute <i>easy_install beard-0.8.zip</i>.
 
+	For JavaScript part you'll also need <a href="beard.js">beard.js</a>.
+
 		How to use it
 
 	Current implementation uses compiled templates. This means
