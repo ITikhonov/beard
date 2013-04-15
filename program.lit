@@ -12,6 +12,51 @@
 
 	Well, you need a cross-language template engine!
 
+		Installation
+
+	Download <a href="dist/beard-0.8.zip">beard-0.8.zip</a>.
+
+	Execute <i>easy_install beard-0.8.zip</i>.
+
+		How to use it
+
+	Current implementation uses compiled templates. This means
+	that beard template file compiled into python .py and
+	JavaScript .js file.
+
+	To compile example.beard, run
+
+	<i>python -m beard.beard example.beard</i>
+
+	This will produce example.py and example.js.
+
+	Now from python:
+
+=>test_example.py
+
+-import beard
+-import example
+
+-beard.render(example.template,{'some':'data'})
+
+	From HTML:
+
+=>test_example.html
+
+-<html>
+-<head>
+-<script src="beard.js"></script>
+-<script src="example.js"></script>
+-</head>
+
+-<body><pre></pre></body>
+
+-<script>
+-	document.body.firstChild.innerHTML=Beard.render('example',{some:'data'});
+-</script>
+-</html>
+
+
 		Cheat sheet
 
 =>quick.beard
@@ -815,7 +860,6 @@
 =>beard.js
 -Beard={
 -	template: {},
--	output: function (x) { if(x!=undefined) putstr(x); },
 -
 -	getvalue: function(data,x) {
 -		var vs=x.split('.');
@@ -832,7 +876,10 @@
 -	compare: function(x,y) { return x==y; },
 -
 -	render: function(name,data) {
--		Beard.template[name](data,undefined,this.output,this.getvalue,this.compare);
+-		var html=[];
+-		function output(x) { html.push(x); }
+-		Beard.template[name](data,undefined,output,this.getvalue,this.compare);
+-		return html.join('');
 -	}
 -};
 
