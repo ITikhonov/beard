@@ -37,7 +37,7 @@
 -import beard
 -import example
 
--beard.render(example.template,{'some':'data'})
+-print beard.render(example.template,{'some':'data'})
 
 	From HTML:
 
