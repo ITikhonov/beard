@@ -233,6 +233,7 @@
 	Nested objects can be addressed with conventional dot-syntax:
 
 =example
+
 -Object field: ##object.field##
 -Non-existig object field: ##notexistent.field##
 
