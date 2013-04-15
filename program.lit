@@ -2,7 +2,7 @@
 	<p style="font-style:italic">'Cause every pirate should have Beard.</p>
 	<p style="text-align:right">&mdash; a random pirate with a beard</p>
 
-		Beard template language.
+		Beard template language
 
 	In the time of XMLHttpRequest need arise for templates to be used both
 	on server-side and client-side.
@@ -10,7 +10,9 @@
 	It's not hard when you use <s>same language</s>JavaScript on both sides.
 	But what to do if you are not fond of Node.js?
 
-	Well, you need a cross-language template engine!
+	Well, you need a cross-language template engine! For now Beard can be
+	used from Python and Javascript, but it's so simple that writing support
+	for another language is a piece of cake.
 
 		Installation
 
