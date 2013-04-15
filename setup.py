@@ -6,8 +6,8 @@ setup(
     description = "Computation-less template language",
     author = "Ivan Tikhonov",
     author_email = "kefeer@brokestream.com",
-    url = "http://brokestream.com/beard.html",
-    download_url = "http://brokestream.com/beard-0.8.zip",
+    url = "http://brokestream.com/beard/",
+    download_url = "http://brokestream.com/beard/dist/beard-0.8.zip",
     keywords = ["templates"],
     classifiers = [
         "Programming Language :: Python",
